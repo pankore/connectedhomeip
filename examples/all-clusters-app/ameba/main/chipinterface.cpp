@@ -17,6 +17,7 @@
 
 #include <platform_stdlib.h>
 
+#include "AppTask.h"
 #include "BindingHandler.h"
 #include "CHIPDeviceManager.h"
 #include "DeviceCallbacks.h"
@@ -174,11 +175,27 @@ extern "C" void ChipTest(void)
 
     chip::DeviceLayer::PlatformMgr().ScheduleWork(InitServer, 0);
 
-    statusLED1.Init(STATUS_LED_GPIO_NUM);
+    // statusLED1.Init(STATUS_LED_GPIO_NUM);
 
 #if CONFIG_ENABLE_CHIP_SHELL
     chip::LaunchShell();
 #endif
+
+    err = GetAppTask().Init();
+    if (err != CHIP_NO_ERROR)
+    {
+        ChipLogError(DeviceLayer, "GetAppTask().Init() failed");
+    }
+    err = GetAppTask().StartDownlinkTask();
+    if (err != CHIP_NO_ERROR)
+    {
+        ChipLogError(DeviceLayer, "GetAppTask().StartDownlinkTask() failed");
+    }
+    err = GetAppTask().StartUplinkTask();
+    if (err != CHIP_NO_ERROR)
+    {
+        ChipLogError(DeviceLayer, "GetAppTask().StartUplinkTask() failed");
+    }
 }
 
 bool lowPowerClusterSleep()

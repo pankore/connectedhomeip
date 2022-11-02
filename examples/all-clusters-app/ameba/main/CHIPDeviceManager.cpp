@@ -80,12 +80,12 @@ exit:
 } // namespace DeviceManager
 } // namespace chip
 
-void MatterPostAttributeChangeCallback(const chip::app::ConcreteAttributePath & path, uint8_t type, uint16_t size, uint8_t * value)
-{
-    chip::DeviceManager::CHIPDeviceManagerCallbacks * cb =
-        chip::DeviceManager::CHIPDeviceManager::GetInstance().GetCHIPDeviceManagerCallbacks();
-    if (cb != nullptr)
-    {
-        cb->PostAttributeChangeCallback(path.mEndpointId, path.mClusterId, path.mAttributeId, type, size, value);
-    }
-}
+// void MatterPostAttributeChangeCallback(const chip::app::ConcreteAttributePath & path, uint8_t type, uint16_t size, uint8_t * value)
+// {
+//     chip::DeviceManager::CHIPDeviceManagerCallbacks * cb =
+//         chip::DeviceManager::CHIPDeviceManager::GetInstance().GetCHIPDeviceManagerCallbacks();
+//     if (cb != nullptr)
+//     {
+//         cb->PostAttributeChangeCallback(path.mEndpointId, path.mClusterId, path.mAttributeId, type, size, value);
+//     }
+// }

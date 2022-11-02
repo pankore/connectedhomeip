@@ -16,13 +16,15 @@
  */
 
 #include "Downlink.h"
+#include "gpio_irq_api.h"
+// #include the gpio header
 
 #define GPIO_IRQ_PIN PA_12
 
 // do this inside of h file
 static Downlink::DownlinkCallback downlink_handler = nullptr;
 
-static void gpio_irq_handler(void * arg)
+static void gpio_demo_irq_handler(uint32_t id, gpio_irq_event event)
 {
     if (downlink_handler != nullptr)
     {
@@ -32,10 +34,10 @@ static void gpio_irq_handler(void * arg)
 
 void Downlink::Init()
 {
+    // Initialize downlink interrupt source here
     gpio_irq_t gpio_btn;
-    
     // Initial Push Button pin as interrupt source
-    gpio_irq_init(&gpio_btn, GPIO_IRQ_PIN, gpio_irq_handler, 1);
+    gpio_irq_init(&gpio_btn, GPIO_IRQ_PIN, gpio_demo_irq_handler, 1);
     gpio_irq_set(&gpio_btn, IRQ_FALL, 1);   // Falling Edge Trigger
     gpio_irq_enable(&gpio_btn) ;
 }

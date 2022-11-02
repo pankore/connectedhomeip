@@ -53,8 +53,6 @@ using namespace ::chip::DeviceLayer;
 using namespace ::chip::DeviceManager;
 using namespace ::chip::Logging;
 
-uint32_t identifyTimerCount;
-constexpr uint32_t kIdentifyTimerDelayMS     = 250;
 constexpr uint32_t kInitOTARequestorDelaySec = 3;
 
 #if CHIP_DEVICE_CONFIG_ENABLE_OTA_REQUESTOR
@@ -86,24 +84,24 @@ void DeviceCallbacks::DeviceEventCallback(const ChipDeviceEvent * event, intptr_
     }
 }
 
-void DeviceCallbacks::PostAttributeChangeCallback(EndpointId endpointId, ClusterId clusterId, AttributeId attributeId, uint8_t type,
-                                                  uint16_t size, uint8_t * value)
-{
-    switch (clusterId)
-    {
-    case ZCL_ON_OFF_CLUSTER_ID:
-        OnOnOffPostAttributeChangeCallback(endpointId, attributeId, value);
-        break;
-
-    case ZCL_IDENTIFY_CLUSTER_ID:
-        OnIdentifyPostAttributeChangeCallback(endpointId, attributeId, value);
-        break;
-
-    default:
-        break;
-    }
-}
-
+// void DeviceCallbacks::PostAttributeChangeCallback(EndpointId endpointId, ClusterId clusterId, AttributeId attributeId, uint8_t type,
+//                                                   uint16_t size, uint8_t * value)
+// {
+//     switch (clusterId)
+//     {
+//     case ZCL_ON_OFF_CLUSTER_ID:
+//         OnOnOffPostAttributeChangeCallback(endpointId, attributeId, value);
+//         break;
+//
+//     case ZCL_IDENTIFY_CLUSTER_ID:
+//         OnIdentifyPostAttributeChangeCallback(endpointId, attributeId, value);
+//         break;
+//
+//     default:
+//         break;
+//     }
+// }
+//
 void DeviceCallbacks::OnInternetConnectivityChange(const ChipDeviceEvent * event)
 {
 #if CHIP_DEVICE_CONFIG_ENABLE_OTA_REQUESTOR
@@ -139,42 +137,6 @@ void DeviceCallbacks::OnInternetConnectivityChange(const ChipDeviceEvent * event
     {
         ChipLogProgress(DeviceLayer, "Lost IPv6 connectivity...");
     }
-}
-
-void DeviceCallbacks::OnOnOffPostAttributeChangeCallback(EndpointId endpointId, AttributeId attributeId, uint8_t * value)
-{
-    VerifyOrExit(attributeId == ZCL_ON_OFF_ATTRIBUTE_ID,
-                 ChipLogError(DeviceLayer, TAG, "Unhandled Attribute ID: '0x%04x", attributeId));
-    VerifyOrExit(endpointId == 1 || endpointId == 2,
-                 ChipLogError(DeviceLayer, TAG, "Unexpected EndPoint ID: `0x%02x'", endpointId));
-
-    // At this point we can assume that value points to a bool value.
-    statusLED1.Set(*value);
-
-exit:
-    return;
-}
-
-void IdentifyTimerHandler(Layer * systemLayer, void * appState, CHIP_ERROR error)
-{
-    if (identifyTimerCount)
-    {
-        identifyTimerCount--;
-    }
-}
-
-void DeviceCallbacks::OnIdentifyPostAttributeChangeCallback(EndpointId endpointId, AttributeId attributeId, uint8_t * value)
-{
-    VerifyOrExit(attributeId == ZCL_IDENTIFY_TIME_ATTRIBUTE_ID,
-                 ChipLogError(DeviceLayer, "[%s] Unhandled Attribute ID: '0x%04x", TAG, attributeId));
-    VerifyOrExit(endpointId == 1, ChipLogError(DeviceLayer, "[%s] Unexpected EndPoint ID: `0x%02x'", TAG, endpointId));
-
-    // timerCount represents the number of callback executions before we stop the timer.
-    // value is expressed in seconds and the timer is fired every 250ms, so just multiply value by 4.
-    // Also, we want timerCount to be odd number, so the ligth state ends in the same state it starts.
-    identifyTimerCount = (*value) * 4;
-exit:
-    return;
 }
 
 bool emberAfBasicClusterMfgSpecificPingCallback(chip::app::CommandHandler * commandObj)

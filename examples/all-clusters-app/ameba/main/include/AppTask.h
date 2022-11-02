@@ -22,9 +22,7 @@
 #include <stdint.h>
 
 #include "AppEvent.h"
-#include "Button.h"
 #include "LEDWidget.h"
-#include "freertos/FreeRTOS.h"
 #include <platform/CHIPDeviceLayer.h>
 
 // Application-defined error codes in the CHIP_ERROR space.
@@ -36,32 +34,31 @@
 #define APP_ERROR_STOP_TIMER_FAILED CHIP_APPLICATION_ERROR(0x06)
 
 extern LEDWidget AppLED;
-extern Button AppButton;
 
 class AppTask
 {
 
 public:
+    CHIP_ERROR Init();
     CHIP_ERROR StartUplinkTask();
     CHIP_ERROR StartDownlinkTask();
     static void UplinkTask(void * pvParameter);
     static void DownlinkTask(void * pvParameter);
     void PostUplinkEvent(const AppEvent * event);
     void PostDownlinkEvent(const AppEvent * event);
+    void UpdateClusterState(AppEvent * event);
 
-    void ButtonEventHandler(const uint8_t buttonHandle, uint8_t btnAction);
+    static void UplinkOnOffEventHandler(AppEvent * aEvent);
+    static void UplinkLevelControlEventHandler(AppEvent * aEvent);
+    static void UplinkIdentifyEventHandler(AppEvent * aEvent);
 
-    void UpdateClusterState();
+    static void DownlinkOnOffEventHandler(AppEvent * aEvent);
 
 private:
     friend AppTask & GetAppTask(void);
-    CHIP_ERROR Init();
     void DispatchUplinkEvent(AppEvent * event);
     void DispatchDownlinkEvent(AppEvent * event);
-    static void UplinkEventHandler(AppEvent * aEvent);
-    static void DownlinkEventHandler(AppEvent * aEvent);
-    static void UplinkCallback(); // This should be matterpostattributechangecallback
-    static void DownlinkCallback();
+    static void DownlinkOnOffCallback();
 
     static AppTask sAppTask;
 };

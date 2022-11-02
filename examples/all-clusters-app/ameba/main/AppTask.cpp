@@ -17,26 +17,48 @@
  */
 
 #include "AppTask.h"
-#include "freertos/FreeRTOS.h"
+#include "Downlink.h"
 
 #include <app-common/zap-generated/attribute-id.h>
 #include <app-common/zap-generated/attribute-type.h>
 #include <app-common/zap-generated/attributes/Accessors.h>
 #include <app-common/zap-generated/cluster-id.h>
 
-#define APP_TASK_NAME "APP"
+#include <app/clusters/on-off-server/on-off-server.h>
+
+#define APP_DOWNLINKTASK_NAME "Downlink"
+#define APP_UPLINKTASK_NAME "Uplink"
 #define APP_EVENT_QUEUE_SIZE 10
 #define APP_TASK_STACK_SIZE (2048)
 #define BUTTON_PRESSED 1
 #define APP_LIGHT_SWITCH 1
 
+#ifdef CONFIG_PLATFORM_8721D
+#define STATUS_LED_GPIO_NUM PB_5
+#elif defined(CONFIG_PLATFORM_8710C)
+#define STATUS_LED_GPIO_NUM         PA_23
+#define RED_LED_GPIO_NUM            PA_18
+#define GREEN_LED_GPIO_NUM          PA_19
+#define BLUE_LED_GPIO_NUM           PA_20
+#define COOL_WHITE_LED_GPIO_NUM     PA_4
+#define WARM_WHITE_LED_GPIO_NUM     PA_17
+#else
+#define STATUS_LED_GPIO_NUM         NC
+#define RED_LED_GPIO_NUM            NC 
+#define GREEN_LED_GPIO_NUM          NC 
+#define BLUE_LED_GPIO_NUM           NC 
+#define COOL_WHITE_LED_GPIO_NUM     NC
+#define WARM_WHITE_LED_GPIO_NUM     NC
+#endif
+
 using namespace ::chip;
 using namespace ::chip::app;
 using namespace ::chip::Credentials;
 using namespace ::chip::DeviceLayer;
+using namespace ::chip::System;
 
 LEDWidget AppLED;
-Button AppButton;
+Downlink Downlink;
 
 namespace {
 constexpr EndpointId kLightEndpointId = 1;
@@ -48,18 +70,42 @@ TaskHandle_t DownlinkTaskHandle;
 
 AppTask AppTask::sAppTask;
 
+uint32_t identifyTimerCount;
+constexpr uint32_t kIdentifyTimerDelayMS     = 250;
+
 CHIP_ERROR AppTask::Init()
 {
     CHIP_ERROR err = CHIP_NO_ERROR;
 
-    AppLED.Init();
-    AppButton.Init();
+    AppLED.Init(STATUS_LED_GPIO_NUM);
+    bool LEDOnOffValue = 0;
+    DataModel::Nullable<uint8_t> LEDCurrentLevelValue;
 
-    // Need to create a class, replace esp's Button class, or maybe just use the LEDWidget class
-    // Set a callbackhere, replace esp's Button callback
-    AppButton.SetButtonPressCallback(DownlinkCallback);
+    chip::DeviceLayer::PlatformMgr().LockChipStack();
+    EmberAfStatus onoffstatus = Clusters::OnOff::Attributes::OnOff::Get(kLightEndpointId, &LEDOnOffValue);
+    if (onoffstatus != EMBER_ZCL_STATUS_SUCCESS)
+    {
+        ChipLogError(DeviceLayer, "Failed to read onoff value: %x", onoffstatus);
+        return CHIP_ERROR_INTERNAL;
+    }
+
+    EmberAfStatus currentlevelstatus = Clusters::LevelControl::Attributes::CurrentLevel::Get(kLightEndpointId, LEDCurrentLevelValue);
+    if (currentlevelstatus != EMBER_ZCL_STATUS_SUCCESS)
+    {
+        ChipLogError(DeviceLayer, "Failed to read currentlevel value: %x", currentlevelstatus);
+        return CHIP_ERROR_INTERNAL;
+    }
+    chip::DeviceLayer::PlatformMgr().UnlockChipStack();
+
+    // Set LED to onoff value
+    AppLED.Set(LEDOnOffValue);
+    // Set LED to currentlevel value
+    AppLED.SetBrightness(LEDCurrentLevelValue.Value());
+
+    Downlink.Init();
+    Downlink.SetDownlinkCallback(DownlinkOnOffCallback);
     // don't need to set uplink callback, it is MatterPostAttributeChangeCallback 
-
+    
     return err;
 }
 
@@ -75,9 +121,9 @@ CHIP_ERROR AppTask::StartDownlinkTask()
 
     // Start Downlink task.
     BaseType_t xReturned;
-    xReturned = xTaskCreate(DownlinkTask, APP_TASK_NAME, APP_TASK_STACK_SIZE, NULL, 1, &DownlinkTaskHandle);
-    // return (xReturned == pdPASS) ? CHIP_NO_ERROR : APP_ERROR_CREATE_TASK_FAILED;
-    // return appropriate error cde
+    xReturned = xTaskCreate(DownlinkTask, APP_DOWNLINKTASK_NAME, APP_TASK_STACK_SIZE, NULL, 1, &DownlinkTaskHandle);
+
+    return (xReturned == pdPASS) ? CHIP_NO_ERROR : CHIP_ERROR_NO_MEMORY;
 }
 
 void AppTask::DownlinkTask(void * pvParameter)
@@ -99,7 +145,7 @@ void AppTask::DownlinkTask(void * pvParameter)
         BaseType_t eventReceived = xQueueReceive(DownlinkEventQueue, &event, pdMS_TO_TICKS(10));
         while (eventReceived == pdTRUE)
         {
-            sAppTask.DispatchEvent(&event);
+            sAppTask.DispatchDownlinkEvent(&event);
             eventReceived = xQueueReceive(DownlinkEventQueue, &event, 0); // return immediately if the queue is empty
         }
     }
@@ -110,17 +156,18 @@ void AppTask::PostDownlinkEvent(const AppEvent * aEvent)
     if (DownlinkEventQueue != NULL)
     {
         BaseType_t status;
-        if (xPortInIsrContext())
-        {
-            BaseType_t higherPrioTaskWoken = pdFALSE;
-            status                         = xQueueSendFromISR(DownlinkEventQueue, aEvent, &higherPrioTaskWoken);
-        }
-        else
-        {
+        // might not need this part since we don't call in isr ever
+        // if (xPortInIsrContext())
+        // {
+        //     BaseType_t higherPrioTaskWoken = pdFALSE;
+        //     status                         = xQueueSendFromISR(DownlinkEventQueue, aEvent, &higherPrioTaskWoken);
+        // }
+        // else
+        // {
             status = xQueueSend(DownlinkEventQueue, aEvent, 1);
-        }
+        // }
         if (!status)
-            ChipLogError(DeviceLayer, "Failed to post downlink event to downlink event queue");
+            ChipLogError(DeviceLayer, "Failed to post downlink event to downlink event queue with");
     }
     else
     {
@@ -142,46 +189,63 @@ void AppTask::DispatchDownlinkEvent(AppEvent * aEvent)
 
 // We need 1 callback, 1 callback handler
 // Change this callback handler to our own
-void AppTask::DownlinkEventHandler(AppEvent * aEvent)
+void AppTask::DownlinkOnOffEventHandler(AppEvent * aEvent)
 {
     // Do we need to turn on LED here? actually depends on vendor
     // If they switch/press a button (or through their own application), LED turns on immediately, before going downlink to update matter
     // then we don't need to turn on LED here again
     // If they switch/press a button (or through their own application), LED doesn't turn on yet, go downlink to update matter
     // then we need to turn on LED here
+    if (aEvent->Type != AppEvent::kEventType_Downlink_OnOff)
+    {
+        ChipLogError(DeviceLayer, "Wrong downlink event handler, should not happen!");
+        return;
+    }
+
     AppLED.Toggle();
     chip::DeviceLayer::PlatformMgr().LockChipStack();
-    sAppTask.UpdateClusterState();
+    // We need to pass in the cluster, attribute, into the UpdateClusterState
+    // We need to take into account more clusters
+    sAppTask.UpdateClusterState(aEvent);
     chip::DeviceLayer::PlatformMgr().UnlockChipStack();
 }
 
 // We need 1 callback, 1 callback handler
-// Change this callback to our own
-void AppTask::DownlinkCallback()
+// this callback is for on off attribute only
+// create more callbacks for other attributes
+void AppTask::DownlinkOnOffCallback()
 {
     AppEvent downlink_event;
-    downlink_event.Type     = AppEvent::kEventType_Uplink;
-    downlink_event.mHandler = AppTask::DownlinkEventHandler;
+    downlink_event.Type     = AppEvent::kEventType_Downlink_OnOff;
+    downlink_event.mHandler = AppTask::DownlinkOnOffEventHandler;
     sAppTask.PostDownlinkEvent(&downlink_event);
 }
 
-void AppTask::UpdateClusterState()
+void AppTask::UpdateClusterState(AppEvent * event)
 {
-    ESP_LOGI(TAG, "Writing to OnOff cluster");
-    // write the new on/off value
-    EmberAfStatus status = Clusters::OnOff::Attributes::OnOff::Set(kLightEndpointId, AppLED.IsTurnedOn());
-
-    if (status != EMBER_ZCL_STATUS_SUCCESS)
+    switch (event->Type)
     {
-        ESP_LOGE(TAG, "Updating on/off cluster failed: %x", status);
-    }
+        case AppEvent::kEventType_Downlink_OnOff:
+            ChipLogProgress(DeviceLayer, "Writing to OnOff cluster");
+            // write the new on/off value
+            EmberAfStatus status = Clusters::OnOff::Attributes::OnOff::Set(kLightEndpointId, AppLED.IsTurnedOn());
 
-    ESP_LOGI(TAG, "Writing to Current Level cluster");
-    status = Clusters::LevelControl::Attributes::CurrentLevel::Set(kLightEndpointId, AppLED.GetLevel());
+            if (status != EMBER_ZCL_STATUS_SUCCESS)
+            {
+                ChipLogError(DeviceLayer, "Updating on/off cluster failed: %x", status);
+            }
 
-    if (status != EMBER_ZCL_STATUS_SUCCESS)
-    {
-        ESP_LOGE(TAG, "Updating level cluster failed: %x", status);
+            ChipLogError(DeviceLayer, "Writing to Current Level cluster");
+            // write the new currentlevel value
+            status = Clusters::LevelControl::Attributes::CurrentLevel::Set(kLightEndpointId, AppLED.GetLevel());
+
+            if (status != EMBER_ZCL_STATUS_SUCCESS)
+            {
+                ChipLogError(DeviceLayer, "Updating level cluster failed: %x", status);
+            }
+            break;
+
+    // TODO: Add more attribute changes
     }
 }
 
@@ -197,9 +261,8 @@ CHIP_ERROR AppTask::StartUplinkTask()
 
     // Start Downlink task.
     BaseType_t xReturned;
-    xReturned = xTaskCreate(UplinkTask, APP_TASK_NAME, APP_TASK_STACK_SIZE, NULL, 1, &UplinkTaskHandle);
-    // return (xReturned == pdPASS) ? CHIP_NO_ERROR : APP_ERROR_CREATE_TASK_FAILED;
-    // return appropriate error cde
+    xReturned = xTaskCreate(UplinkTask, APP_UPLINKTASK_NAME, APP_TASK_STACK_SIZE, NULL, 1, &UplinkTaskHandle);
+    return (xReturned == pdPASS) ? CHIP_NO_ERROR : CHIP_ERROR_NO_MEMORY;
 }
 
 void AppTask::UplinkTask(void * pvParameter)
@@ -214,8 +277,9 @@ void AppTask::UplinkTask(void * pvParameter)
         BaseType_t eventReceived = xQueueReceive(UplinkEventQueue, &event, pdMS_TO_TICKS(10));
         while (eventReceived == pdTRUE)
         {
-            sAppTask.DispatchEvent(&event);
+            sAppTask.DispatchUplinkEvent(&event);
             eventReceived = xQueueReceive(UplinkEventQueue, &event, 0); // return immediately if the queue is empty
+            //vTaskDelay(10);
         }
     }
 }
@@ -226,15 +290,15 @@ void AppTask::PostUplinkEvent(const AppEvent * aEvent)
     {
         BaseType_t status;
         // don't need this check for uplink? or even downlink? since it won't be from ISR
-        if (xPortInIsrContext())
-        {
-            BaseType_t higherPrioTaskWoken = pdFALSE;
-            status                         = xQueueSendFromISR(UplinkEventQueue, aEvent, &higherPrioTaskWoken);
-        }
-        else
-        {
+        // if (xPortInIsrContext())
+        // {
+        //     BaseType_t higherPrioTaskWoken = pdFALSE;
+        //     status                         = xQueueSendFromISR(UplinkEventQueue, aEvent, &higherPrioTaskWoken);
+        // }
+        // else
+        // {
             status = xQueueSend(UplinkEventQueue, aEvent, 1);
-        }
+        // }
         if (!status)
             ChipLogError(DeviceLayer, "Failed to post uplink event to uplink event queue");
     }
@@ -254,32 +318,111 @@ void AppTask::DispatchUplinkEvent(AppEvent * aEvent)
     {
         ChipLogError(DeviceLayer, "Uplink event received with no handler. Dropping event.");
     }
+    printf("*****%s, line: %d\r\n", __FUNCTION__, __LINE__);
 }
 
-void AppTask::UplinkEventHandler(AppEvent * aEvent)
+void AppTask::UplinkOnOffEventHandler(AppEvent * aEvent)
 {
-    // Here we turn on the LED
+    VerifyOrExit(aEvent->path.mEndpointId == 1 || aEvent->path.mEndpointId == 2,
+                 ChipLogError(DeviceLayer, "Unexpected EndPoint ID: `0x%02x'", aEvent->path.mEndpointId));
+    switch (aEvent->path.mAttributeId)
+    {
+    case ZCL_ON_OFF_ATTRIBUTE_ID:
+        printf("onoff value: %d\r\n\r\n", aEvent->value);
+        AppLED.Set(aEvent->value);
+        break;
+    default:
+        ChipLogProgress(DeviceLayer, "Unhandled attribute");
+        break;
+    }
+
     // No need to update cluster state
+exit:
+    return;
 }
 
+void AppTask::UplinkLevelControlEventHandler(AppEvent * aEvent)
+{
+    VerifyOrExit(aEvent->path.mEndpointId == 1 || aEvent->path.mEndpointId == 2,
+                 ChipLogError(DeviceLayer, "Unexpected EndPoint ID: `0x%02x'", aEvent->path.mEndpointId));
+    switch (aEvent->path.mAttributeId)
+    {
+    case ZCL_CURRENT_LEVEL_ATTRIBUTE_ID:
+        printf("currentlevel value: %d\r\n\r\n", aEvent->value);
+        AppLED.SetBrightness(aEvent->value);
+        break;
+    default:
+        ChipLogProgress(DeviceLayer, "Unhandled attribute");
+        break;
+    }
+
+    // No need to update cluster state
+exit:
+    return;
+}
+
+void IdentifyTimerHandler(Layer * systemLayer, void * appState, CHIP_ERROR error)
+{
+    if (identifyTimerCount)
+    {
+        // systemLayer->StartTimer(Clock::Milliseconds32(kIdentifyTimerDelayMS), IdentifyTimerHandler, appState);
+        // Decrement the timer count.
+        identifyTimerCount--;
+    }
+}
+
+void AppTask::UplinkIdentifyEventHandler(AppEvent * aEvent)
+{
+    VerifyOrExit(aEvent->path.mAttributeId == ZCL_IDENTIFY_TIME_ATTRIBUTE_ID,
+                 ChipLogError(DeviceLayer, "Unhandled Attribute ID: '0x%04x", aEvent->path.mAttributeId));
+    VerifyOrExit(aEvent->path.mEndpointId == 1, ChipLogError(DeviceLayer, "Unexpected EndPoint ID: `0x%02x'", aEvent->path.mEndpointId));
+
+    switch (aEvent->path.mAttributeId)
+    {
+    case ZCL_IDENTIFY_TIME_ATTRIBUTE_ID:
+        // timerCount represents the number of callback executions before we stop the timer.
+        // value is expressed in seconds and the timer is fired every 250ms, so just multiply value by 4.
+        // Also, we want timerCount to be odd number, so the ligth state ends in the same state it starts.
+        identifyTimerCount = (aEvent->value) * 4;
+        break;
+    }
+
+exit:
+    return;
+}
 // This is the uplink callback
 void MatterPostAttributeChangeCallback(const chip::app::ConcreteAttributePath & path, uint8_t type, uint16_t size, uint8_t * value)
 {
     AppEvent uplink_event;
-    uplink_event.endpointId = path.mEndpointId;
-    uplink_event.clusterId = path.mClusterId;
-    uplink_event.attributeId = path.mAttributeId;
-    uplink_event.value = value;
-    uplink_event.mHandler = AppTask::UplinkEventHandler;
-    sAppTask.PostUplinkEvent(&uplink_event);
+    uplink_event.Type = AppEvent::kEventType_Uplink;
+    uplink_event.value = *value;
+    uplink_event.path = path;
+    // uplink_event.endpointId = path.mEndpointId;
+    // uplink_event.clusterId = path.mClusterId;
+    // uplink_event.attributeId = path.mAttributeId;
 
-    // chip::DeviceManager::CHIPDeviceManagerCallbacks * cb =
-    //     chip::DeviceManager::CHIPDeviceManager::GetInstance().GetCHIPDeviceManagerCallbacks();
-    // if (cb != nullptr)
-    // {
-    //     cb->PostAttributeChangeCallback(path.mEndpointId, path.mClusterId, path.mAttributeId, type, size, value);
-    // }
+    switch (path.mClusterId)
+    {
+    case ZCL_ON_OFF_CLUSTER_ID:
+        uplink_event.mHandler = AppTask::UplinkOnOffEventHandler;
+        // printf("onoff value: %d\r\n\r\n", *value);
+        GetAppTask().PostUplinkEvent(&uplink_event);
+        break;
 
-    // From here, we prepare and post an event to the uplink queue
+    case ZCL_LEVEL_CONTROL_CLUSTER_ID:
+        uplink_event.mHandler = AppTask::UplinkLevelControlEventHandler;
+        printf("##############levelcontrol value: %d\r\n\r\n", *value);
+        GetAppTask().PostUplinkEvent(&uplink_event);
+        break;
+
+    case ZCL_IDENTIFY_CLUSTER_ID:
+        // OnIdentifyPostAttributeChangeCallback(endpointId, attributeId, value);
+        uplink_event.mHandler = AppTask::UplinkIdentifyEventHandler;
+        // GetAppTask().PostUplinkEvent(&uplink_event);
+        break;
+
+    default:
+        uplink_event.mHandler = NULL;
+        break;
+    }
 }
-

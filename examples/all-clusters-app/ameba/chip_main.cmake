@@ -161,6 +161,8 @@ list(
     ${chip_dir}/examples/all-clusters-app/ameba/main/CHIPDeviceManager.cpp
     ${chip_dir}/examples/all-clusters-app/ameba/main/Globals.cpp
     ${chip_dir}/examples/all-clusters-app/ameba/main/LEDWidget.cpp
+    ${chip_dir}/examples/all-clusters-app/ameba/main/Downlink.cpp
+    ${chip_dir}/examples/all-clusters-app/ameba/main/AppTask.cpp
     ${chip_dir}/examples/all-clusters-app/ameba/main/DsoHack.cpp
 
     ${chip_dir}/examples/platform/ameba/route_hook/ameba_route_hook.c

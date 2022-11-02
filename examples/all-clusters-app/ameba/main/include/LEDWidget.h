@@ -21,9 +21,7 @@
 #include <platform_stdlib.h>
 
 #ifdef CONFIG_PLATFORM_8710C
-#include "gpio_api.h"
-#include "rtl8710c_pin_name.h"
-
+#include "pwmout_api.h"
 #else
 
 typedef enum
@@ -129,30 +127,55 @@ typedef enum
     NC = (uint32_t) 0xFFFFFFFF
 } PinName;
 
-typedef struct gpio_s
-{
-    PinName pin;
-} gpio_t;
-
 #endif
-
-typedef struct gpio_s gpio_t;
-
-extern "C" void gpio_init(gpio_t * obj, PinName pin);
-extern "C" uint32_t gpio_set(PinName pin);
-extern "C" void gpio_mode(gpio_t * obj, PinMode mode);
-extern "C" void gpio_dir(gpio_t * obj, PinDirection direction);
-extern "C" void gpio_write(gpio_t * obj, int value);
-extern "C" int gpio_read(gpio_t * obj);
 
 class LEDWidget
 {
 public:
-    void Init(PinName gpioNum);
+    //void Init(PinName pin);
+    void Init(PinName pin);
+    void Init(PinName redpin, PinName greenpin, PinName bluepin);
+    void Init(PinName redpin, PinName greenpin, PinName bluepin, PinName cwhitepin, PinName wwhitepin);
+    void deInit(void);
+    uint8_t GetLevel(void);
+    bool IsTurnedOn(void);
     void Set(bool state);
+    void Toggle(void);
+    void SetBrightness(uint8_t brightness);
+    void SetColor(uint8_t Hue, uint8_t Saturation);
+    void SetColorTemp(uint16_t colortemp);
+    void HSB2rgb(uint16_t Hue, uint8_t Saturation, uint8_t brightness, uint8_t & red, uint8_t & green, uint8_t & blue);
+    void simpleRGB2RGBW(uint8_t & red, uint8_t & green, uint8_t & blue, uint8_t & cwhite, uint8_t & wwhite);
+    uint8_t mBrightness;
+    uint16_t mHue;       // mHue [0, 360]
+    uint8_t mSaturation; // mSaturation [0, 100]
+    uint16_t mColorTemp;
 
 private:
-    PinName mGPIONum;
+    pwmout_t *mPwm_obj = NULL;
+    pwmout_t *mPwm_red = NULL;
+    pwmout_t *mPwm_green = NULL;
+    pwmout_t *mPwm_blue = NULL;
+    pwmout_t *mPwm_cwhite = NULL;
+    pwmout_t *mPwm_wwhite = NULL;
+    bool mRgb = false;
+    bool mRgbw = false;
     bool mState;
-    void DoSet(bool state);
+    void DoSet();
+    uint16_t WhitePercentage[11][3] = 
+    {
+        /*CT--coolwhite%--warmwhite%*/
+        {2708, 0, 100},
+        {2891, 10, 90},
+        {3110, 20, 80},
+        {3364, 30, 70},
+        {3656, 40, 60},
+        {3992, 50, 50},
+        {4376, 60, 40},
+        {4809, 70, 30},
+        {5304, 80, 20},
+        {5853, 90, 10},
+        {6471, 100, 0}
+    };
+
 };
