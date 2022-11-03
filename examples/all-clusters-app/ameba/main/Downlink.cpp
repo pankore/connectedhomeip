@@ -18,9 +18,8 @@
 #include "Downlink.h"
 #include "gpio_irq_api.h"
 #include <stdio.h>
-// #include the gpio header
 
-#ifndef WARM_WHITE_LED_GPIO_NUM
+#ifndef WARM_WHITE_LED_GPIO_NUM && (WARM_WHITE_LED_GPIO_NUM == PA_17)
 #define GPIO_IRQ_PIN PA_17
 #else
 #error "IRQ pin conflict"
@@ -32,7 +31,6 @@ static Downlink::DownlinkCallback downlink_handler = nullptr;
 
 void gpio_demo_irq_handler(uint32_t id, gpio_irq_event event)
 {
-    printf("\r\n\r\nIRQ!!!\r\n\r\n");
     if (downlink_handler != nullptr)
     {
         downlink_handler();
@@ -41,7 +39,6 @@ void gpio_demo_irq_handler(uint32_t id, gpio_irq_event event)
 
 void Downlink::Init()
 {
-    printf("\r\n\r\nDOWNLINK INIT\r\n\r\n");
     // Initialize downlink interrupt source here
     // Initial Push Button pin as interrupt source
     gpio_irq_init(&gpio_btn, GPIO_IRQ_PIN, gpio_demo_irq_handler, 1);

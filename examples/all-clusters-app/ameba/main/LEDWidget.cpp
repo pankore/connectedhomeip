@@ -112,59 +112,37 @@ bool LEDWidget::IsTurnedOn()
 
 void LEDWidget::Set(bool state)
 {
-    ChipLogProgress(DeviceLayer, "Setting state to %d", state);
     if (mState == state)
         return;
 
     mState = state;
-    // DoSet();
+    // DoSet will be done during levelcontrol change
 }
 
 void LEDWidget::Toggle()
 {
-    ChipLogProgress(DeviceLayer, "Toggling state to %d", !mState);
-    // bool state = !mState;
-    //
-    // DoSet(state);
     mState = !mState;
-    // DoSet();
+    // DoSet will be done during levelcontrol change
 }
 
 void LEDWidget::SetBrightness(uint8_t brightness)
 {
-    ChipLogProgress(DeviceLayer, "Setting brightness to %d", brightness);
-
     mBrightness = brightness;
 
     DoSet();
 }
 
-// DoSet
-//void LEDWidget::SetBrightness(uint8_t brightness)
 void LEDWidget::DoSet()
 {
     uint8_t brightness = mState ? mBrightness : 0;
-    printf("\r\n\r\nbrightness: %d\r\n\r\n", brightness);
-    printf("\r\n\r\nmBrightness: %d\r\n\r\n", mBrightness);
 
     if (!mRgb)
     {
-        // if (brightness > 0 && brightness < 255)
-        // {
-        //     mBrightness = brightness;
-        // }
-
         float duty_cycle = (float) (brightness) / 254;
-        printf("\r\n\r\nduty_cycle: %f\r\n\r\n", duty_cycle);
         pwmout_write(mPwm_obj, duty_cycle);
     }
     else
     {
-        // if (brightness > 0 && brightness < 255)
-        // {
-        //     mBrightness = brightness;
-        // }
-
         uint8_t red, green, blue, coolwhite, warmwhite;
         float duty_red, duty_green, duty_blue, duty_cwhite, duty_wwhite;
         // uint8_t brightness = mState ? mBrightness : 0;
@@ -182,15 +160,15 @@ void LEDWidget::DoSet()
         duty_green = static_cast<float>(green) / 254.0;
         duty_blue = static_cast<float>(blue) / 254.0;
 
-        ChipLogProgress(DeviceLayer, "brightness: %d", brightness);
-        ChipLogProgress(DeviceLayer, "red: %d, red_duty: %f", red, duty_red);
-        ChipLogProgress(DeviceLayer, "green: %d, green_duty: %f", green, duty_green);
-        ChipLogProgress(DeviceLayer, "blue: %d, blue_duty: %f", blue, duty_blue);
+        // ChipLogProgress(DeviceLayer, "brightness: %d", brightness);
+        // ChipLogProgress(DeviceLayer, "red: %d, red_duty: %f", red, duty_red);
+        // ChipLogProgress(DeviceLayer, "green: %d, green_duty: %f", green, duty_green);
+        // ChipLogProgress(DeviceLayer, "blue: %d, blue_duty: %f", blue, duty_blue);
 
         if (mRgbw)
         {
-            ChipLogProgress(DeviceLayer, "cwhite: %d, cwhite_duty: %f", coolwhite, duty_cwhite);
-            ChipLogProgress(DeviceLayer, "wwhite: %d, wwhite_duty: %f", warmwhite, duty_wwhite);
+            // ChipLogProgress(DeviceLayer, "cwhite: %d, cwhite_duty: %f", coolwhite, duty_cwhite);
+            // ChipLogProgress(DeviceLayer, "wwhite: %d, wwhite_duty: %f", warmwhite, duty_wwhite);
             pwmout_write(mPwm_cwhite, duty_cwhite);
             pwmout_write(mPwm_wwhite, duty_wwhite);
         }
@@ -202,14 +180,7 @@ void LEDWidget::DoSet()
     }
 }
 
-// void LEDWidget::DoSet(bool state)
-// {
-//     bool stateChange = (mState != state);
-//     mState           = state;
-//
-//     // No need to configure lighting here, will be done in SetBrightness
-// }
-
+// Below functions are WIP
 void LEDWidget::SetColor(uint8_t Hue, uint8_t Saturation)
 {
     if (mRgb)
