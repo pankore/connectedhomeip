@@ -133,8 +133,6 @@ void LEDWidget::Toggle()
 void LEDWidget::SetBrightness(uint8_t brightness)
 {
     ChipLogProgress(DeviceLayer, "Setting brightness to %d", brightness);
-    if (brightness == mBrightness)
-        return;
 
     mBrightness = brightness;
 

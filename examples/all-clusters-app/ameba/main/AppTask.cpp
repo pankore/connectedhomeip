@@ -24,8 +24,6 @@
 #include <app-common/zap-generated/attributes/Accessors.h>
 #include <app-common/zap-generated/cluster-id.h>
 
-#include <app/clusters/on-off-server/on-off-server.h>
-
 #define APP_DOWNLINKTASK_NAME "Downlink"
 #define APP_UPLINKTASK_NAME "Uplink"
 #define APP_EVENT_QUEUE_SIZE 10
@@ -153,18 +151,18 @@ void AppTask::DownlinkTask(void * pvParameter)
 
 void AppTask::PostDownlinkEvent(const AppEvent * aEvent)
 {
+    printf("%s\r\n", __FUNCTION__);
     if (DownlinkEventQueue != NULL)
     {
         BaseType_t status;
-        // might not need this part since we don't call in isr ever
         // if (xPortInIsrContext())
         // {
-        //     BaseType_t higherPrioTaskWoken = pdFALSE;
-        //     status                         = xQueueSendFromISR(DownlinkEventQueue, aEvent, &higherPrioTaskWoken);
+            BaseType_t higherPrioTaskWoken = pdFALSE;
+            status                         = xQueueSendFromISR(DownlinkEventQueue, aEvent, &higherPrioTaskWoken);
         // }
         // else
         // {
-            status = xQueueSend(DownlinkEventQueue, aEvent, 1);
+        //     status = xQueueSend(DownlinkEventQueue, aEvent, 1);
         // }
         if (!status)
             ChipLogError(DeviceLayer, "Failed to post downlink event to downlink event queue with");
@@ -215,6 +213,7 @@ void AppTask::DownlinkOnOffEventHandler(AppEvent * aEvent)
 // create more callbacks for other attributes
 void AppTask::DownlinkOnOffCallback()
 {
+    printf("%s\r\n", __FUNCTION__);
     AppEvent downlink_event;
     downlink_event.Type     = AppEvent::kEventType_Downlink_OnOff;
     downlink_event.mHandler = AppTask::DownlinkOnOffEventHandler;

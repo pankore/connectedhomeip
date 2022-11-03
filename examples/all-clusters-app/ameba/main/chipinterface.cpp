@@ -178,7 +178,8 @@ extern "C" void ChipTest(void)
     // statusLED1.Init(STATUS_LED_GPIO_NUM);
 
 #if CONFIG_ENABLE_CHIP_SHELL
-    chip::LaunchShell();
+    // chip::LaunchShell();
+    vTaskDelay(5000);
 #endif
 
     err = GetAppTask().Init();
