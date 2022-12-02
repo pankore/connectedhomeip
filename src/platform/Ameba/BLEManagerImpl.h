@@ -26,7 +26,7 @@
 #include "event_groups.h"
 #include "gap_msg.h"
 #include "timers.h"
-
+#include "platform_opts_bt.h"
 namespace chip {
 namespace DeviceLayer {
 namespace Internal {
@@ -146,7 +146,11 @@ private:
     void HandleRXCharWrite(uint8_t *, uint16_t, uint8_t);
     void HandleTXCharRead(void * param);
 #if CHIP_ENABLE_ADDITIONAL_DATA_ADVERTISING
+#if CONFIG_BT_MATTER_ADAPTER
     void HandleC3CharRead(TBTCONFIG_CALLBACK_DATA * p_data);
+#elif CONFIG_BT_MESH_DEVICE_MATTER
+    void HandleC3CharRead(TSIMP_CALLBACK_DATA * p_data);
+#endif
 #endif
     void HandleTXCharCCCDRead(void * param);
     void HandleTXCharCCCDWrite(int, int, int);
@@ -161,9 +165,14 @@ private:
     void AddConnection(uint8_t connectionHandle);
 
     BLEManagerImpl::CHIPoBLEConState * GetConnectionState(uint8_t connectionHandle, bool allocate);
+#if CONFIG_BT_MATTER_ADAPTER
     static CHIP_ERROR ble_svr_gap_msg_event(void * param, T_IO_MSG * p_gap_msg);
-    static CHIP_ERROR ble_svr_gap_event(void * param, int cb_type, void * p_cb_data);
     static CHIP_ERROR gatt_svr_chr_access(void * param, T_SERVER_ID service_id, TBTCONFIG_CALLBACK_DATA * p_data);
+#elif CONFIG_BT_MESH_DEVICE_MATTER
+    static CHIP_ERROR ble_svr_gap_msg_conn_event(void * param, BT_MATTER_CONN_EVENT * p_gap_msg);
+    static CHIP_ERROR gatt_svr_chr_access(void * param, T_SERVER_ID service_id, void * p_data);
+#endif
+    static CHIP_ERROR ble_svr_gap_event(void * param, int cb_type, void * p_cb_data);
     static int ble_callback_dispatcher(void * param, void * p_cb_data, int type, T_CHIP_BLEMGR_CALLBACK_TYPE callback_type);
     static void DriveBLEState(intptr_t arg);
     static void BleAdvTimeoutHandler(TimerHandle_t xTimer);
