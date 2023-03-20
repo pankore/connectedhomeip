@@ -147,9 +147,9 @@ void ConnectivityManagerImpl::_OnPlatformEvent(const ChipDeviceEvent * event)
 #if CHIP_DEVICE_CONFIG_ENABLE_WIFI
     if (event->Type == DeviceEventType::kRtkWiFiStationConnectedEvent)
     {
-        ChangeWiFiStationState(kWiFiStationState_Connecting);
         ChipLogProgress(DeviceLayer, "WiFiStationConnected");
-        if (mWiFiStationState == kWiFiStationState_Connecting)
+        // check if connected to ap
+        if (mWiFiStationState == kWiFiStationState_Connecting || wifi_is_connected_to_ap())
         {
             ChangeWiFiStationState(kWiFiStationState_Connecting_Succeeded);
         }
@@ -167,11 +167,11 @@ void ConnectivityManagerImpl::_OnPlatformEvent(const ChipDeviceEvent * event)
         {
             ChangeWiFiStationState(kWiFiStationState_Connecting_Failed);
         }
-        else if (mWiFiStationState == kWiFiStationState_Connecting)
+        else if (mWiFiStationState == kWiFiStationState_Connected)
         {
             ChangeWiFiStationState(kWiFiStationState_Disconnecting);
         }
-        DriveStationState();
+        // DriveStationState();
     }
     if (event->Type == DeviceEventType::kRtkWiFiScanCompletedEvent)
     {
