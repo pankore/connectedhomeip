@@ -299,68 +299,88 @@ void AmebaWiFiDriver::OnNetworkStatusChange()
             Status::kSuccess, MakeOptional(ByteSpan(configuredNetwork.networkID, configuredNetwork.networkIDLen)), NullOptional);
         return;
     }
-    mpStatusChangeCallback->OnNetworkingStatusChange(
-        Status::kUnknownError, MakeOptional(ByteSpan(configuredNetwork.networkID, configuredNetwork.networkIDLen)),
-        MakeOptional(GetLastDisconnectReason()));
-}
-
-void AmebaWiFiDriver::ScanNetworks(ByteSpan ssid, WiFiDriver::ScanCallback * callback)
-{
-    if (callback != nullptr)
+    else
     {
-        mpScanCallback = callback;
-        if (StartScanWiFiNetworks(ssid) != CHIP_NO_ERROR)
+        switch (GetLastDisconnectReason())
         {
-            mpScanCallback = nullptr;
-            callback->OnFinished(Status::kUnknownError, CharSpan(), nullptr);
+        case RTW_NONE_NETWORK:
+            mpStatusChangeCallback->OnNetworkingStatusChange(
+                Status::kNetworkNotFound, MakeOptional(ByteSpan(configuredNetwork.networkID, configuredNetwork.networkIDLen)),
+                MakeOptional(GetLastDisconnectReason()));
+            break;
+        case RTW_4WAY_HANDSHAKE_TIMEOUT:
+            mpStatusChangeCallback->OnNetworkingStatusChange(
+                Status::kOtherConnectionFailure,
+                MakeOptional(ByteSpan(configuredNetwork.networkID, configuredNetwork.networkIDLen)),
+                MakeOptional(GetLastDisconnectReason()));
+            break;
+        case RTW_AUTH_FAIL:
+            mpStatusChangeCallback->OnNetworkingStatusChange(
+                Status::kAuthFailure, MakeOptional(ByteSpan(configuredNetwork.networkID, configuredNetwork.networkIDLen)),
+                MakeOptional(GetLastDisconnectReason()));
+            break;
+        case RTW_UNKNOWN:
+            mpStatusChangeCallback->OnNetworkingStatusChange(
+                Status::kUnknownError, MakeOptional(ByteSpan(configuredNetwork.networkID, configuredNetwork.networkIDLen)),
+                MakeOptional(GetLastDisconnectReason()));
+            break;
+        }
+        mpStatusChangeCallback->OnNetworkingStatusChange(
+            Status::kUnknownError, MakeOptional(ByteSpan(configuredNetwork.networkID, configuredNetwork.networkIDLen)),
+            MakeOptional(GetLastDisconnectReason()));
+    }
+
+    void AmebaWiFiDriver::ScanNetworks(ByteSpan ssid, WiFiDriver::ScanCallback * callback)
+    {
+        if (callback != nullptr)
+        {
+            mpScanCallback = callback;
+            if (StartScanWiFiNetworks(ssid) != CHIP_NO_ERROR)
+            {
+                mpScanCallback = nullptr;
+                callback->OnFinished(Status::kUnknownError, CharSpan(), nullptr);
+            }
         }
     }
-}
 
-CHIP_ERROR AmebaWiFiDriver::SetLastDisconnectReason(const ChipDeviceEvent * event)
-{
-    VerifyOrReturnError(event->Type == DeviceEventType::kRtkWiFiStationDisconnectedEvent, CHIP_ERROR_INVALID_ARGUMENT);
-    mLastDisconnectedReason = wifi_get_last_error();
-    return CHIP_NO_ERROR;
-}
-
-int32_t AmebaWiFiDriver::GetLastDisconnectReason()
-{
-    return mLastDisconnectedReason;
-}
-
-size_t AmebaWiFiDriver::WiFiNetworkIterator::Count()
-{
-    return mDriver->mStagingNetwork.ssidLen == 0 ? 0 : 1;
-}
-
-bool AmebaWiFiDriver::WiFiNetworkIterator::Next(Network & item)
-{
-    if (mExhausted || mDriver->mStagingNetwork.ssidLen == 0)
+    CHIP_ERROR AmebaWiFiDriver::SetLastDisconnectReason(const ChipDeviceEvent * event)
     {
-        return false;
+        VerifyOrReturnError(event->Type == DeviceEventType::kRtkWiFiStationDisconnectedEvent, CHIP_ERROR_INVALID_ARGUMENT);
+        mLastDisconnectedReason = wifi_get_last_error();
+        return CHIP_NO_ERROR;
     }
-    memcpy(item.networkID, mDriver->mStagingNetwork.ssid, mDriver->mStagingNetwork.ssidLen);
-    item.networkIDLen = mDriver->mStagingNetwork.ssidLen;
-    item.connected    = false;
-    mExhausted        = true;
 
-    Network configuredNetwork;
-    CHIP_ERROR err = GetConfiguredNetwork(configuredNetwork);
-    if (err == CHIP_NO_ERROR)
+    int32_t AmebaWiFiDriver::GetLastDisconnectReason() { return mLastDisconnectedReason; }
+
+    size_t AmebaWiFiDriver::WiFiNetworkIterator::Count() { return mDriver->mStagingNetwork.ssidLen == 0 ? 0 : 1; }
+
+    bool AmebaWiFiDriver::WiFiNetworkIterator::Next(Network & item)
     {
-        bool isConnected = false;
-        err              = chip::DeviceLayer::Internal::AmebaUtils::IsStationConnected(isConnected);
-
-        if (isConnected && configuredNetwork.networkIDLen == item.networkIDLen &&
-            memcmp(configuredNetwork.networkID, item.networkID, item.networkIDLen) == 0)
+        if (mExhausted || mDriver->mStagingNetwork.ssidLen == 0)
         {
-            item.connected = true;
+            return false;
         }
+        memcpy(item.networkID, mDriver->mStagingNetwork.ssid, mDriver->mStagingNetwork.ssidLen);
+        item.networkIDLen = mDriver->mStagingNetwork.ssidLen;
+        item.connected    = false;
+        mExhausted        = true;
+
+        Network configuredNetwork;
+        CHIP_ERROR err = GetConfiguredNetwork(configuredNetwork);
+        if (err == CHIP_NO_ERROR)
+        {
+            bool isConnected = false;
+            err              = chip::DeviceLayer::Internal::AmebaUtils::IsStationConnected(isConnected);
+
+            if (isConnected && configuredNetwork.networkIDLen == item.networkIDLen &&
+                memcmp(configuredNetwork.networkID, item.networkID, item.networkIDLen) == 0)
+            {
+                item.connected = true;
+            }
+        }
+        return true;
     }
-    return true;
-}
 
 } // namespace NetworkCommissioning
+} // namespace NetworkCommissioning
 } // namespace DeviceLayer
-} // namespace chip

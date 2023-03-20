@@ -83,7 +83,7 @@ CHIP_ERROR ConnectivityManagerImpl::_Init()
     chip_connmgr_set_callback_func((chip_connmgr_callback)(conn_callback_dispatcher), this);
 
     // Register WiFi event handlers
-    wifi_reg_event_handler(WIFI_EVENT_CONNECT, ConnectivityManagerImpl::RtkWiFiStationConnectedHandler, NULL);
+    wifi_reg_event_handler(WIFI_EVENT_FOURWAY_HANDSHAKE_DONE, ConnectivityManagerImpl::RtkWiFiStationConnectedHandler, NULL);
     wifi_reg_event_handler(WIFI_EVENT_DISCONNECT, ConnectivityManagerImpl::RtkWiFiStationDisconnectedHandler, NULL);
 
     err = Internal::AmebaUtils::StartWiFi();
@@ -165,6 +165,10 @@ void ConnectivityManagerImpl::_OnPlatformEvent(const ChipDeviceEvent * event)
         if (mWiFiStationState == kWiFiStationState_Connecting)
         {
             ChangeWiFiStationState(kWiFiStationState_Connecting_Failed);
+        }
+        else if (mWiFiStationState == kWiFiStationState_Connecting)
+        {
+            ChangeWiFiStationState(kWiFiStationState_Disconnecting);
         }
         DriveStationState();
     }
@@ -541,14 +545,13 @@ void ConnectivityManagerImpl::DriveStationState()
                 now >= mLastStationConnectFailTime + mWiFiStationReconnectInterval)
             {
                 ChipLogProgress(DeviceLayer, "Attempting to connect WiFi station interface");
+                ChangeWiFiStationState(kWiFiStationState_Connecting);
                 err = Internal::AmebaUtils::WiFiConnect();
                 if (err != CHIP_NO_ERROR)
                 {
                     ChipLogError(DeviceLayer, "WiFiConnect() failed: %s", chip::ErrorStr(err));
                 }
                 SuccessOrExit(err);
-
-                ChangeWiFiStationState(kWiFiStationState_Connecting);
             }
 
             // Otherwise arrange another connection attempt at a suitable point in the future.
