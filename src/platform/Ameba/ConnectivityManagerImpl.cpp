@@ -147,6 +147,7 @@ void ConnectivityManagerImpl::_OnPlatformEvent(const ChipDeviceEvent * event)
 #if CHIP_DEVICE_CONFIG_ENABLE_WIFI
     if (event->Type == DeviceEventType::kRtkWiFiStationConnectedEvent)
     {
+        ChangeWiFiStationState(kWiFiStationState_Connecting);
         ChipLogProgress(DeviceLayer, "WiFiStationConnected");
         if (mWiFiStationState == kWiFiStationState_Connecting)
         {
