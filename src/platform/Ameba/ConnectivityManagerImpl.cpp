@@ -83,7 +83,7 @@ CHIP_ERROR ConnectivityManagerImpl::_Init()
     chip_connmgr_set_callback_func((chip_connmgr_callback)(conn_callback_dispatcher), this);
 
     // Register WiFi event handlers
-    wifi_reg_event_handler(WIFI_EVENT_CONNECT, ConnectivityManagerImpl::RtkWiFiStationConnectedHandler, NULL);
+    wifi_reg_event_handler(WIFI_EVENT_FOURWAY_HANDSHAKE_DONE, ConnectivityManagerImpl::RtkWiFiStationConnectedHandler, NULL);
     wifi_reg_event_handler(WIFI_EVENT_DISCONNECT, ConnectivityManagerImpl::RtkWiFiStationDisconnectedHandler, NULL);
 
     err = Internal::AmebaUtils::StartWiFi();

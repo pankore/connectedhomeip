@@ -37,6 +37,7 @@ public:
     static CHIP_ERROR ClearWiFiConfig(void);
     static CHIP_ERROR WiFiDisconnect(void);
     static CHIP_ERROR WiFiConnect(void);
+    static CHIP_ERROR SetStationWiFiConfigOnnetwork(void);
 };
 
 } // namespace Internal
