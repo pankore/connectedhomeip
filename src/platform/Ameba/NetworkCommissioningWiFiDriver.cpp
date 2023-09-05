@@ -287,16 +287,51 @@ void AmebaWiFiDriver::OnNetworkStatusChange()
         return;
     }
 
-    VerifyOrReturn(chip::DeviceLayer::Internal::AmebaUtils::IsStationConnected(staConnected) == CHIP_NO_ERROR);
+    err = chip::DeviceLayer::Internal::AmebaUtils::IsStationConnected(staConnected);
     if (staConnected)
     {
         mpStatusChangeCallback->OnNetworkingStatusChange(
             Status::kSuccess, MakeOptional(ByteSpan(configuredNetwork.networkID, configuredNetwork.networkIDLen)), NullOptional);
         return;
     }
-    mpStatusChangeCallback->OnNetworkingStatusChange(
-        Status::kUnknownError, MakeOptional(ByteSpan(configuredNetwork.networkID, configuredNetwork.networkIDLen)),
-        MakeOptional(GetLastDisconnectReason()));
+    else
+    {
+        switch(matter_wifi_get_last_error())
+        {
+        case RTW_NONE_NETWORK:
+            mpStatusChangeCallback->OnNetworkingStatusChange(
+                Status::kNetworkNotFound, MakeOptional(ByteSpan(configuredNetwork.networkID, configuredNetwork.networkIDLen)),
+                MakeOptional(GetLastDisconnectReason()));
+            break;
+#if defined(CONFIG_PLATFORM_8710C)
+        case RTW_AUTH_FAIL:
+            mpStatusChangeCallback->OnNetworkingStatusChange(
+                Status::kAuthFailure, MakeOptional(ByteSpan(configuredNetwork.networkID, configuredNetwork.networkIDLen)),
+                MakeOptional(GetLastDisconnectReason()));
+            break;
+#endif
+        case RTW_CONNECT_FAIL:
+        case RTW_WRONG_PASSWORD:
+        case RTW_4WAY_HANDSHAKE_TIMEOUT:
+#if defined(CONFIG_PLATFORM_8710C)
+        case RTW_ASSOC_FAIL:
+#endif
+            mpStatusChangeCallback->OnNetworkingStatusChange(
+                Status::kOtherConnectionFailure, MakeOptional(ByteSpan(configuredNetwork.networkID, configuredNetwork.networkIDLen)),
+                MakeOptional(GetLastDisconnectReason()));
+            break;
+        case RTW_DHCP_FAIL:
+            mpStatusChangeCallback->OnNetworkingStatusChange(
+                Status::kIPBindFailed, MakeOptional(ByteSpan(configuredNetwork.networkID, configuredNetwork.networkIDLen)),
+                MakeOptional(GetLastDisconnectReason()));
+            break;
+        default:
+            mpStatusChangeCallback->OnNetworkingStatusChange(
+                Status::kUnknownError, MakeOptional(ByteSpan(configuredNetwork.networkID, configuredNetwork.networkIDLen)),
+                MakeOptional(GetLastDisconnectReason()));
+            break;
+        }
+    }
 }
 
 void AmebaWiFiDriver::ScanNetworks(ByteSpan ssid, WiFiDriver::ScanCallback * callback)
