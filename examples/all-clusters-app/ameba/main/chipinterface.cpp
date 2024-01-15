@@ -134,6 +134,28 @@ uint8_t sTestEventTriggerEnableKey[TestEventTriggerDelegate::kEnableKeyLength] =
                                                                                    0x88, 0x99, 0xaa, 0xbb, 0xcc, 0xdd, 0xee, 0xff };
 #endif
 
+class AmebaObserver : public AppDelegate, public FabricTable::Delegate
+{
+public:
+    // Commissioning Observer
+    void OnCommissioningSessionEstablishmentError(CHIP_ERROR err) override
+    {
+        ChipLogProgress(DeviceLayer, "Ameba Observer: Commissioning error (0x%x)", err);
+        // Handle commissioning errror here
+    }
+    // Fabric Observer
+    void OnFabricRemoved(const FabricTable & fabricTable, FabricIndex fabricIndex) override
+    {
+        ChipLogProgress(DeviceLayer, "Ameba Observer: Fabric 0x%x has been Removed", fabricIndex);
+        if (chip::Server::GetInstance().GetFabricTable().FabricCount() == 0)
+        {
+            // Customer code
+        }
+    }
+};
+
+AmebaObserver sAmebaObserver;
+
 static void InitServer(intptr_t context)
 {
     // Init ZCL Data Model and CHIP App Server
@@ -145,8 +167,10 @@ static void InitServer(intptr_t context)
 #endif
 
     initParams.InitializeStaticResourcesBeforeServerInit();
+    initParams.appDelegate = &sAmebaObserver;
 
     chip::Server::GetInstance().Init(initParams);
+    chip::Server::GetInstance().GetFabricTable().AddFabricDelegate(&sAmebaObserver);
     gExampleDeviceInfoProvider.SetStorageDelegate(&Server::GetInstance().GetPersistentStorage());
     // TODO: Use our own DeviceInfoProvider
     chip::DeviceLayer::SetDeviceInfoProvider(&gExampleDeviceInfoProvider);
