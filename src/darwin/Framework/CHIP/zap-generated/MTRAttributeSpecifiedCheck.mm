@@ -579,12 +579,6 @@ static BOOL AttributeIsSpecifiedInBasicInformationCluster(AttributeId aAttribute
     case Attributes::ProductAppearance::Id: {
         return YES;
     }
-    case Attributes::SpecificationVersion::Id: {
-        return YES;
-    }
-    case Attributes::MaxPathsPerInvoke::Id: {
-        return YES;
-    }
     case Attributes::GeneratedCommandList::Id: {
         return YES;
     }
