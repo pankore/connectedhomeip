@@ -14,6 +14,8 @@
  *    See the License for the specific language governing permissions and
  *    limitations under the License.
  */
+
+#if CONFIG_ENABLE_AMEBA_CRYPTO
 #include <crypto/CHIPCryptoPAL.h>
 #include <crypto/CHIPCryptoPALmbedTLS.h>
 #include <crypto/OperationalKeystore.h>
@@ -58,8 +60,8 @@ CHIP_ERROR AmebaP256Keypair::Initialize(Crypto::ECPKeyTarget key_target)
 
     mbedtls_ecp_keypair * keypair = to_keypair(&mKeypair);
 
-    VerifyOrExit(matter_get_publickey(Uint8::to_uchar(mPublicKey), mPublicKey.Length()) != 0, 
-                    error = CHIP_ERROR_INVALID_PUBLIC_KEY);
+    VerifyOrExit(matter_get_publickey(Uint8::to_uchar(mPublicKey), mPublicKey.Length()) != 0,
+                 error = CHIP_ERROR_INVALID_PUBLIC_KEY);
 
     keypair      = nullptr;
     mInitialized = true;
@@ -129,7 +131,6 @@ CHIP_ERROR StoreOperationalKey(FabricIndex fabricIndex, PersistentStorageDelegat
     {
         // P256SerializedKeypair has RAII secret clearing
         Crypto::P256SerializedKeypair serializedOpKey;
-
         size_t len = serializedOpKey.Length() == 0 ? serializedOpKey.Capacity() : serializedOpKey.Length();
 
         int result = matter_serialize(serializedOpKey.Bytes(), len);
@@ -150,6 +151,52 @@ CHIP_ERROR StoreOperationalKey(FabricIndex fabricIndex, PersistentStorageDelegat
     return CHIP_NO_ERROR;
 }
 
+CHIP_ERROR ExportStoredOpKey(FabricIndex fabricIndex, PersistentStorageDelegate * storage,
+                             Crypto::P256SerializedKeypair & serializedOpKey)
+{
+    VerifyOrReturnError(storage != nullptr, CHIP_ERROR_INVALID_ARGUMENT);
+    VerifyOrReturnError(IsValidFabricIndex(fabricIndex), CHIP_ERROR_INVALID_FABRIC_INDEX);
+
+    // Use a SensitiveDataBuffer to get RAII secret data clearing on scope exit.
+    Crypto::SensitiveDataBuffer<OpKeyTLVMaxSize()> buf;
+
+    // Load up the operational key structure from storage
+    uint16_t size = static_cast<uint16_t>(buf.Capacity());
+    ReturnErrorOnFailure(
+        storage->SyncGetKeyValue(DefaultStorageKeyAllocator::FabricOpKey(fabricIndex).KeyName(), buf.Bytes(), size));
+
+    buf.SetLength(static_cast<size_t>(size));
+
+    // Read-out the operational key TLV entry.
+    TLV::ContiguousBufferTLVReader reader;
+    reader.Init(buf.Bytes(), buf.Length());
+
+    ReturnErrorOnFailure(reader.Next(TLV::kTLVType_Structure, TLV::AnonymousTag()));
+    TLV::TLVType containerType;
+    ReturnErrorOnFailure(reader.EnterContainer(containerType));
+
+    ReturnErrorOnFailure(reader.Next(kOpKeyVersionTag));
+    uint16_t opKeyVersion;
+    ReturnErrorOnFailure(reader.Get(opKeyVersion));
+    VerifyOrReturnError(opKeyVersion == kOpKeyVersion, CHIP_ERROR_VERSION_MISMATCH);
+
+    ReturnErrorOnFailure(reader.Next(kOpKeyDataTag));
+    {
+        ByteSpan keyData;
+        ReturnErrorOnFailure(reader.GetByteView(keyData));
+
+        // Unfortunately, we have to copy the data into a P256SerializedKeypair.
+        VerifyOrReturnError(keyData.size() <= serializedOpKey.Capacity(), CHIP_ERROR_BUFFER_TOO_SMALL);
+
+        ReturnErrorOnFailure(reader.ExitContainer(containerType));
+
+        memcpy(serializedOpKey.Bytes(), keyData.data(), keyData.size());
+        serializedOpKey.SetLength(keyData.size());
+    }
+
+    return CHIP_NO_ERROR;
+}
+
 /** WARNING: This can leave the operational key on the stack somewhere, since many of the platform
  *           APIs use stack buffers and do not sanitize! This implementation is for example purposes
  *           only of the API and it is recommended to avoid directly accessing raw private key bits
@@ -163,77 +210,35 @@ CHIP_ERROR SignWithStoredOpKey(FabricIndex fabricIndex, PersistentStorageDelegat
     // Use RAII scoping for the transient keypair, to make sure it doesn't get leaked on any error paths.
     // Key is put in heap since signature is a costly stack operation and P256Keypair is
     // a costly class depending on the backend.
-
     auto transientOperationalKeypair = Platform::MakeUnique<P256Keypair>();
     if (!transientOperationalKeypair)
     {
         return CHIP_ERROR_NO_MEMORY;
     }
 
-	CHIP_ERROR err = CHIP_NO_ERROR;
-	int result = 1;
     // Scope 1: Load up the keypair data from storage
+    P256SerializedKeypair serializedOpKey;
+    CHIP_ERROR err = ExportStoredOpKey(fabricIndex, storage, serializedOpKey);
+    if (CHIP_ERROR_PERSISTED_STORAGE_VALUE_NOT_FOUND == err)
     {
-        // Use a SensitiveDataBuffer to get RAII secret data clearing on scope exit.
-        Crypto::SensitiveDataBuffer<OpKeyTLVMaxSize()> buf;
+        return CHIP_ERROR_INVALID_FABRIC_INDEX;
+    }
 
-        // Load up the operational key structure from storage
-        uint16_t size = static_cast<uint16_t>(buf.Capacity());
-        err = storage->SyncGetKeyValue(DefaultStorageKeyAllocator::FabricOpKey(fabricIndex).KeyName(), buf.Bytes(), size);
-        if (err == CHIP_ERROR_PERSISTED_STORAGE_VALUE_NOT_FOUND)
-        {
-            err = CHIP_ERROR_INVALID_FABRIC_INDEX;
-        }
-        ReturnErrorOnFailure(err);
-        buf.SetLength(static_cast<size_t>(size));
-
-        // Read-out the operational key TLV entry.
-        TLV::ContiguousBufferTLVReader reader;
-        reader.Init(buf.Bytes(), buf.Length());
-
-        ReturnErrorOnFailure(reader.Next(TLV::kTLVType_Structure, TLV::AnonymousTag()));
-        TLV::TLVType containerType;
-        ReturnErrorOnFailure(reader.EnterContainer(containerType));
-
-        ReturnErrorOnFailure(reader.Next(kOpKeyVersionTag));
-        uint16_t opKeyVersion;
-        ReturnErrorOnFailure(reader.Get(opKeyVersion));
-        VerifyOrReturnError(opKeyVersion == kOpKeyVersion, CHIP_ERROR_VERSION_MISMATCH);
-
-        ReturnErrorOnFailure(reader.Next(kOpKeyDataTag));
-        {
-            ByteSpan keyData;
-            Crypto::P256SerializedKeypair serializedOpKey;
-            ReturnErrorOnFailure(reader.GetByteView(keyData));
-
-            // Unfortunately, we have to copy the data into a P256SerializedKeypair.
-            VerifyOrReturnError(keyData.size() <= serializedOpKey.Capacity(), CHIP_ERROR_BUFFER_TOO_SMALL);
-
-            // Before doing anything with the key, validate format further.
-            ReturnErrorOnFailure(reader.ExitContainer(containerType));
-            ReturnErrorOnFailure(reader.VerifyEndOfContainer());
-
-            memcpy(serializedOpKey.Bytes(), keyData.data(), keyData.size());
-            serializedOpKey.SetLength(keyData.size());
-
-            // Load-up key material
-            // WARNING: This makes use of the raw key bits
-            result = matter_deserialize(serializedOpKey.Bytes(), serializedOpKey.Length());
-            if (result != 0)
-            {
-                err = CHIP_ERROR_INTERNAL;
-            }
-            ReturnErrorOnFailure(err);
-        }
+    // Load-up key material
+    // WARNING: This makes use of the raw key bits
+    int result = matter_deserialize(serializedOpKey.Bytes(), serializedOpKey.Length());
+    if (result != 0)
+    {
+        return CHIP_ERROR_INTERNAL;
     }
 
     // Scope 2: Sign message with the keypair
     result = matter_ecdsa_sign_msg(message.data(), message.size(), outSignature.Bytes());
-    if(result != 0)
+    if (result != 0)
     {
-        err = CHIP_ERROR_INTERNAL;
+        return CHIP_ERROR_INTERNAL;
     }
-    ReturnErrorOnFailure(err);
+
     VerifyOrReturnError(outSignature.SetLength(kP256_ECDSA_Signature_Length_Raw) == CHIP_NO_ERROR, err = CHIP_ERROR_INTERNAL);
     return err;
 }
@@ -266,40 +271,40 @@ bool AmebaPersistentStorageOperationalKeystore::HasOpKeypairForFabric(FabricInde
 }
 
 CHIP_ERROR AmebaPersistentStorageOperationalKeystore::NewOpKeypairForFabric(FabricIndex fabricIndex,
-                                                                       MutableByteSpan & outCertificateSigningRequest)
+                                                                            MutableByteSpan & outCertificateSigningRequest)
 {
     VerifyOrReturnError(mStorage != nullptr, CHIP_ERROR_INCORRECT_STATE);
     VerifyOrReturnError(IsValidFabricIndex(fabricIndex), CHIP_ERROR_INVALID_FABRIC_INDEX);
-
     // If a key is pending, we cannot generate for a different fabric index until we commit or revert.
     if ((mPendingFabricIndex != kUndefinedFabricIndex) && (fabricIndex != mPendingFabricIndex))
     {
-        return CHIP_ERROR_INVALID_FABRIC_INDEX  ;
+        return CHIP_ERROR_INVALID_FABRIC_INDEX;
     }
     VerifyOrReturnError(outCertificateSigningRequest.size() >= Crypto::kMIN_CSR_Buffer_Size, CHIP_ERROR_BUFFER_TOO_SMALL);
 
     // Replace previous pending keypair, if any was previously allocated
     ResetPendingKey();
 
-	mPendingKeypair = Platform::New<P256Keypair>();
-	VerifyOrReturnError(mPendingKeypair != nullptr, CHIP_ERROR_NO_MEMORY);
+    mPendingKeypair = Platform::New<P256Keypair>();
+    VerifyOrReturnError(mPendingKeypair != nullptr, CHIP_ERROR_NO_MEMORY);
 
     size_t TempLength = outCertificateSigningRequest.size();
-    size_t csrLength = matter_gen_new_csr(outCertificateSigningRequest.data(), TempLength);
+    size_t csrLength  = matter_gen_new_csr(outCertificateSigningRequest.data(), TempLength);
 
     if (csrLength <= 0)
     {
-		ResetPendingKey();
+        ResetPendingKey();
         return CHIP_ERROR_INTERNAL;
     }
 
     outCertificateSigningRequest.reduce_size(csrLength);
     mPendingFabricIndex = fabricIndex;
+
     return CHIP_NO_ERROR;
 }
 
 CHIP_ERROR AmebaPersistentStorageOperationalKeystore::ActivateOpKeypairForFabric(FabricIndex fabricIndex,
-                                                                            const Crypto::P256PublicKey & nocPublicKey)
+                                                                                 const Crypto::P256PublicKey & nocPublicKey)
 {
     VerifyOrReturnError(mStorage != nullptr, CHIP_ERROR_INCORRECT_STATE);
     VerifyOrReturnError(mPendingKeypair != nullptr, CHIP_ERROR_INVALID_FABRIC_INDEX);
@@ -332,6 +337,13 @@ CHIP_ERROR AmebaPersistentStorageOperationalKeystore::CommitOpKeypairForFabric(F
     return CHIP_NO_ERROR;
 }
 
+CHIP_ERROR AmebaPersistentStorageOperationalKeystore::ExportOpKeypairForFabric(FabricIndex fabricIndex,
+                                                                               Crypto::P256SerializedKeypair & outKeypair)
+{
+    VerifyOrReturnError(mStorage != nullptr, CHIP_ERROR_INCORRECT_STATE);
+    return ExportStoredOpKey(fabricIndex, mStorage, outKeypair);
+}
+
 CHIP_ERROR AmebaPersistentStorageOperationalKeystore::RemoveOpKeypairForFabric(FabricIndex fabricIndex)
 {
     VerifyOrReturnError(mStorage != nullptr, CHIP_ERROR_INCORRECT_STATE);
@@ -361,7 +373,7 @@ void AmebaPersistentStorageOperationalKeystore::RevertPendingKeypair()
 }
 
 CHIP_ERROR AmebaPersistentStorageOperationalKeystore::SignWithOpKeypair(FabricIndex fabricIndex, const ByteSpan & message,
-                                                                   Crypto::P256ECDSASignature & outSignature) const
+                                                                        Crypto::P256ECDSASignature & outSignature) const
 {
     VerifyOrReturnError(mStorage != nullptr, CHIP_ERROR_INCORRECT_STATE);
     VerifyOrReturnError(IsValidFabricIndex(fabricIndex), CHIP_ERROR_INVALID_FABRIC_INDEX);
@@ -371,9 +383,9 @@ CHIP_ERROR AmebaPersistentStorageOperationalKeystore::SignWithOpKeypair(FabricIn
         VerifyOrReturnError(mPendingKeypair != nullptr, CHIP_ERROR_INTERNAL);
         // We have an override key: sign with it!
         CHIP_ERROR err = CHIP_NO_ERROR;
-        if(matter_ecdsa_sign_msg(message.data(), message.size(), outSignature.Bytes()) != 0)
+        if (matter_ecdsa_sign_msg(message.data(), message.size(), outSignature.Bytes()) != 0)
         {
-            err = CHIP_ERROR_INTERNAL;
+            return CHIP_ERROR_INTERNAL;
         }
         VerifyOrReturnError(outSignature.SetLength(kP256_ECDSA_Signature_Length_Raw) == CHIP_NO_ERROR, err = CHIP_ERROR_INTERNAL);
         return err;
@@ -384,7 +396,6 @@ CHIP_ERROR AmebaPersistentStorageOperationalKeystore::SignWithOpKeypair(FabricIn
 
 Crypto::P256Keypair * AmebaPersistentStorageOperationalKeystore::AllocateEphemeralKeypairForCASE()
 {
-
     // DO NOT CUT AND PASTE without considering the ReleaseEphemeralKeypair().
     // If allocating a derived class, then `ReleaseEphemeralKeypair` MUST
     // de-allocate the derived class after up-casting the base class pointer.
@@ -398,4 +409,38 @@ void AmebaPersistentStorageOperationalKeystore::ReleaseEphemeralKeypair(Crypto::
     Platform::Delete<Crypto::P256Keypair>(keypair);
 }
 
+CHIP_ERROR AmebaPersistentStorageOperationalKeystore::MigrateOpKeypairForFabric(FabricIndex fabricIndex,
+                                                                                OperationalKeystore & operationalKeystore) const
+{
+    VerifyOrReturnError(mStorage != nullptr, CHIP_ERROR_INCORRECT_STATE);
+    VerifyOrReturnError(IsValidFabricIndex(fabricIndex), CHIP_ERROR_INVALID_FABRIC_INDEX);
+
+    P256SerializedKeypair serializedKeypair;
+
+    // Do not allow overwriting the existing key and just remove it from the previous Operational Keystore if needed.
+    if (!HasOpKeypairForFabric(fabricIndex))
+    {
+        ReturnErrorOnFailure(operationalKeystore.ExportOpKeypairForFabric(fabricIndex, serializedKeypair));
+
+        auto operationalKeypair = Platform::MakeUnique<P256Keypair>();
+        if (!operationalKeypair)
+        {
+            return CHIP_ERROR_NO_MEMORY;
+        }
+
+        ReturnErrorOnFailure(operationalKeypair->Deserialize(serializedKeypair));
+        ReturnErrorOnFailure(StoreOperationalKey(fabricIndex, mStorage, operationalKeypair.get()));
+
+        ReturnErrorOnFailure(operationalKeystore.RemoveOpKeypairForFabric(fabricIndex));
+    }
+    else if (operationalKeystore.HasOpKeypairForFabric(fabricIndex))
+    {
+        ReturnErrorOnFailure(operationalKeystore.RemoveOpKeypairForFabric(fabricIndex));
+    }
+
+    return CHIP_NO_ERROR;
+}
+
 } // namespace chip
+
+#endif /* CONFIG_ENABLE_AMEBA_CRYPTO */
