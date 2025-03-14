@@ -24,6 +24,10 @@
 #include "gpio_api.h"
 #include "rtl8710c_pin_name.h"
 
+#elif defined(CONFIG_PLATFORM_8735B)
+#include "gpio_api.h"
+#include "rtl8735b_pin_name.h"
+
 #else
 
 typedef enum
