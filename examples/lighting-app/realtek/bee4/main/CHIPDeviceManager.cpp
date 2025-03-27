@@ -29,7 +29,7 @@
 #include <app-common/zap-generated/ids/Attributes.h>
 #include <app-common/zap-generated/ids/Clusters.h>
 #include <core/ErrorStr.h>
-#include <platform/Realtek_bee/FactoryDataProvider.h>
+#include <platform/realtek/bee4/FactoryDataProvider.h>
 #include <support/CHIPMem.h>
 #include <support/CodeUtils.h>
 

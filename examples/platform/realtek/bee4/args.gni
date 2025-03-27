@@ -12,26 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Options from standalone-chip.mk that differ from configure defaults. These
-# options are used from examples/.
-
-import("//build_overrides/build.gni")
 import("//build_overrides/chip.gni")
 
-import("${chip_root}/build/chip/tests.gni")
+import("${chip_root}/src/platform/realtek/bee4/args.gni")
 
-declare_args() {
-  chip_build_pw_rpc_lib = false
-}
-
-group("realtek_bee") {
-  deps = [ "${chip_root}/src/lib" ]
-
-  if (chip_build_pw_rpc_lib) {
-    deps += [ "//lib/pw_rpc" ]
-  }
-
-  if (chip_build_tests) {
-    deps += [ "${chip_root}/src:tests" ]
-  }
-}

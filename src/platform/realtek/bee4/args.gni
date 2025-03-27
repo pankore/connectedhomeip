@@ -12,27 +12,21 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import("//build_overrides/build.gni")
 import("//build_overrides/chip.gni")
 
-import("${build_root}/toolchain/gcc_toolchain.gni")
+mbedtls_target = "//mbedtls:mbedtls"
 
-declare_args() {
-  bee_ar = ""
-  bee_cc = ""
-  bee_cxx = ""
-  bee_cpu = ""
-}
+realtek_platform = "bee4"
+#realtek_sdk_name = ""
+realtek_device_layer = "realtek/${realtek_platform}"
 
-gcc_toolchain("realtek_bee") {
-  ar = bee_ar
-  cc = bee_cc
-  cxx = bee_cxx
+chip_device_platform = "realtek"
+chip_mdns = "platform"
 
-  toolchain_args = {
-    current_os = "freertos"
-    current_cpu = bee_cpu
-    is_clang = false
-    import("${chip_root}/src/platform/Realtek_bee/args.gni")
-  }
-}
+lwip_platform = "external"
+lwip_debug = false
+
+chip_inet_config_enable_ipv4 = false
+chip_inet_config_enable_tcp_endpoint = false
+
+chip_build_tests = false

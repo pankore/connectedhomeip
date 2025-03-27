@@ -16,12 +16,12 @@ import("//build_overrides/chip.gni")
 
 import("${chip_root}/src/platform/device.gni")
 
-assert(chip_device_platform == "realtek_bee")
+assert(chip_device_platform == "realtek")
 
-static_library("Realtek_bee") {
+static_library("bee4") {
   sources = [
-    "../FreeRTOS/SystemTimeSupport.cpp",
-    "../SingletonConfigurationManager.cpp",
+    "../../FreeRTOS/SystemTimeSupport.cpp",
+    "../../SingletonConfigurationManager.cpp",
     "BLEManagerImpl.cpp",
     "BLEManagerImpl.h",
     "BeeConfig.cpp",
@@ -65,17 +65,17 @@ static_library("Realtek_bee") {
 
   if (chip_enable_openthread) {
     sources += [
-      "../OpenThread/GenericNetworkCommissioningThreadDriver.cpp",
-      "../OpenThread/GenericNetworkCommissioningThreadDriver.h",
-      "../OpenThread/OpenThreadDnssdImpl.cpp",
-      "../OpenThread/OpenThreadDnssdImpl.h",
-      "../OpenThread/OpenThreadUtils.cpp",
+      "../../OpenThread/GenericNetworkCommissioningThreadDriver.cpp",
+      "../../OpenThread/GenericNetworkCommissioningThreadDriver.h",
+      "../../OpenThread/OpenThreadDnssdImpl.cpp",
+      "../../OpenThread/OpenThreadDnssdImpl.h",
+      "../../OpenThread/OpenThreadUtils.cpp",
       "ThreadStackManagerImpl.cpp",
       "ThreadStackManagerImpl.h",
     ]
 
     if (chip_mdns == "platform") {
-      sources += [ "../OpenThread/DnssdImpl.cpp" ]
+      sources += [ "../../OpenThread/DnssdImpl.cpp" ]
       deps += [ "${chip_root}/src/lib/dnssd:platform_header" ]
     }
   }

@@ -25,7 +25,7 @@
 #pragma once
 
 #include <platform/ConnectivityManager.h>
-#include <platform/Realtek_bee/BeeConfig.h>
+#include <platform/realtek/bee4/BeeConfig.h>
 #include <platform/internal/GenericConfigurationManagerImpl.h>
 
 namespace chip {

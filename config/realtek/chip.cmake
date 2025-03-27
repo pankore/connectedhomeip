@@ -23,7 +23,6 @@ list(
     -DCHIP_PROJECT=1
     -DCONFIG_USE_MBEDTLS_ROM_ALG
     -DDM_ODM_SUPPORT_TYPE=32
-    -DCHIP_DEVICE_LAYER_TARGET=Realtek_bee
     -D_POSIX_REALTIME_SIGNALS
     -DCHIP_SHELL_MAX_TOKENS=11
 )
@@ -58,13 +57,13 @@ list(
     APPEND CHIP_INC
 
 	${inc_path}
-    ${CHIP_ROOT}/config/realtek_bee
+    ${CHIP_ROOT}/config/realtek
     ${CHIP_ROOT}/src/include
     ${CHIP_ROOT}/src/lib
     ${CHIP_ROOT}/src
     ${CHIP_ROOT}/src/system
     ${CHIP_ROOT}/src/app
-    ${CHIP_ROOT}/src/platform/Realtek_bee
+    ${CHIP_ROOT}/src/platform/realtek/bee4
     ${CHIP_ROOT}/src/platform/OpenThread
     ${CHIP_ROOT}/third_party/nlassert/repo/include
     ${CHIP_ROOT}/third_party/nlio/repo/include
@@ -136,7 +135,7 @@ if (matter_enable_rpc)
 string(APPEND CHIP_GN_ARGS "chip_build_pw_rpc_lib = true\n")
 string(APPEND CHIP_GN_ARGS "pw_log_BACKEND = \"//third_party/connectedhomeip/third_party/pigweed/repo/pw_log_basic\"\n")
 string(APPEND CHIP_GN_ARGS "pw_assert_BACKEND = \"//third_party/connectedhomeip/third_party/pigweed/repo/pw_assert_log:check_backend\"\n")
-string(APPEND CHIP_GN_ARGS "pw_sys_io_BACKEND = \"//third_party/connectedhomeip/examples/platform/realtek_bee/pw_sys_io:pw_sys_io_bee\"\n")
+string(APPEND CHIP_GN_ARGS "pw_sys_io_BACKEND = \"//third_party/connectedhomeip/examples/platform/realtek/bee4/pw_sys_io:pw_sys_io_bee\"\n")
 string(APPEND CHIP_GN_ARGS "dir_pw_third_party_nanopb = \"//third_party/connectedhomeip/third_party/nanopb/repo\"\n")
 string(APPEND CHIP_GN_ARGS "pw_build_LINK_DEPS = [\"//third_party/connectedhomeip/third_party/pigweed/repo/pw_assert:impl\", \"//third_party/connectedhomeip/third_party/pigweed/repo/pw_log:impl\"]\n")
 string(APPEND CHIP_GN_ARGS "pw_rpc_CONFIG = \"//third_party/connectedhomeip/third_party/pigweed/repo/pw_rpc:disable_global_mutex\"")
@@ -182,8 +181,8 @@ ExternalProject_Add(
     PREFIX                  ${CMAKE_CURRENT_BINARY_DIR}
     SOURCE_DIR              ${CHIP_ROOT}
     BINARY_DIR              ${CMAKE_CURRENT_BINARY_DIR}
-    CONFIGURE_COMMAND       gn --root=${CHIP_ROOT}/config/realtek_bee gen --check --fail-on-unused-args ${CHIP_OUTPUT}
-    BUILD_COMMAND           ninja -C ${CHIP_OUTPUT} :realtek_bee
+    CONFIGURE_COMMAND       gn --root=${CHIP_ROOT}/config/realtek gen --check --fail-on-unused-args ${CHIP_OUTPUT}
+    BUILD_COMMAND           ninja -C ${CHIP_OUTPUT} :realtek
     INSTALL_COMMAND         ""
     BUILD_BYPRODUCTS        -lCHIP -lPwRpc
 	CONFIGURE_ALWAYS        TRUE
