@@ -32,6 +32,9 @@
 #include <app/clusters/identify-server/identify-server.h>
 #include <app/clusters/network-commissioning/network-commissioning.h>
 #include <app/server/OnboardingCodesUtil.h>
+#if defined(CHIP_ENABLE_AMEBA_TERMS_AND_CONDITION) && (CHIP_ENABLE_AMEBA_TERMS_AND_CONDITION == 1)
+#include <app/server/TermsAndConditionsManager.h>
+#endif
 #include <app/server/Server.h>
 #include <app/util/endpoint-config-api.h>
 #include <lib/core/ErrorStr.h>
@@ -161,6 +164,13 @@ static void InitServer(intptr_t context)
     gExampleDeviceInfoProvider.SetStorageDelegate(&Server::GetInstance().GetPersistentStorage());
     // TODO: Use our own DeviceInfoProvider
     chip::DeviceLayer::SetDeviceInfoProvider(&gExampleDeviceInfoProvider);
+
+#if defined(CHIP_ENABLE_AMEBA_TERMS_AND_CONDITION) && (CHIP_ENABLE_AMEBA_TERMS_AND_CONDITION == 1)
+    const Optional<app::TermsAndConditions> termsAndConditions = Optional<app::TermsAndConditions>(
+        app::TermsAndConditions(CHIP_AMEBA_TC_REQUIRED_ACKNOWLEDGEMENTS, CHIP_AMEBA_TC_MIN_REQUIRED_VERSION));
+    PersistentStorageDelegate & persistentStorageDelegate = Server::GetInstance().GetPersistentStorage();
+    chip::app::TermsAndConditionsManager::GetInstance()->Init(&persistentStorageDelegate, termsAndConditions);
+#endif
 
     NetWorkCommissioningInstInit();
 
