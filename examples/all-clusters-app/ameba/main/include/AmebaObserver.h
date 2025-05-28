@@ -30,7 +30,7 @@ public:
     // Commissioning Observer
     void OnCommissioningSessionEstablishmentError(CHIP_ERROR err) override
     {
-        ChipLogProgress(DeviceLayer, "Ameba Observer: Commissioning error (0x%x)", err);
+        ChipLogProgress(DeviceLayer, "Ameba Observer: Commissioning error (%" PRIx32 ")", static_cast<uint32_t>(err));
         // Handle commissioning errror here
     }
     // Fabric Observer
