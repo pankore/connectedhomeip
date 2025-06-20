@@ -25,7 +25,10 @@
 
 #include <stdlib.h>
 
-#include "CHIPDeviceManager.h"
+#if CONFIG_ENABLE_AMEBA_ATTRIBUTE_CALLBACK
+#include <ameba_matter_attribute_callbacks.h>
+#endif
+#include <CHIPDeviceManager.h>
 #include <app/ConcreteAttributePath.h>
 #include <app/util/basic-types.h>
 #include <core/ErrorStr.h>
@@ -36,6 +39,8 @@
 #include <support/CodeUtils.h>
 
 using namespace ::chip;
+using namespace ::chip::app;
+using namespace ::chip::app::Clusters;
 using namespace ::chip::Credentials;
 
 namespace chip {
@@ -109,4 +114,12 @@ void MatterPostAttributeChangeCallback(const chip::app::ConcreteAttributePath & 
     {
         cb->PostAttributeChangeCallback(path.mEndpointId, path.mClusterId, path.mAttributeId, type, size, value);
     }
+
+#if CONFIG_ENABLE_AMEBA_ATTRIBUTE_CALLBACK
+    if (AmebaDeviceManager::GetInstance() != nullptr)
+    {
+        AmebaDeviceManager::GetInstance()->AmebaPostAttributeChangeCallback(
+            path.mEndpointId, path.mClusterId, path.mAttributeId, type, size, value);
+    }
+#endif
 }
