@@ -301,6 +301,9 @@ if (chip_device_platform != "none" && chip_device_platform != "external") {
         "CHIP_DEVICE_LAYER_TARGET=Ameba",
         "CHIP_DEVICE_CONFIG_ENABLE_WIFI=${chip_enable_wifi}",
       ]
+    } else if (chip_device_platform == "rtl87x3g") {
+      device_layer_target_define = "RTL87X3G"
+      defines += [ "CHIP_DEVICE_LAYER_TARGET=realtek/RTL87X3G" ]
     } else if (chip_device_platform == "realtek_bee") {
       device_layer_target_define = "REALTEK_BEE"
       defines += [ "CHIP_DEVICE_LAYER_TARGET=realtek/BEE" ]
@@ -377,6 +380,7 @@ if (chip_device_platform != "none" && chip_device_platform != "external") {
       "FAKE",
       "ANDROID",
       "AMEBA",
+      "RTL87X3G",
       "REALTEK_BEE",
       "CYW30739",
       "WEBOS",
@@ -625,6 +629,8 @@ if (chip_device_platform != "none") {
       _platform_target = "Infineon/PSOC6"
     } else if (chip_device_platform == "ameba") {
       _platform_target = "Ameba"
+      } else if (chip_device_platform == "rtl87x3g") {
+      _platform_target = "realtek/RTL87X3G"
     } else if (chip_device_platform == "realtek_bee") {
       _platform_target = "realtek/BEE"
     } else if (chip_device_platform == "webos") {

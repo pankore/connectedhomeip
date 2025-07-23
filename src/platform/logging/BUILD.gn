@@ -35,6 +35,8 @@ group("default") {
       deps += [ "${chip_root}/src/platform/ti/cc13xx_26xx/cc13x4_26x4:logging" ]
     } else if (chip_device_platform == "ameba") {
       deps += [ "${chip_root}/src/platform/Ameba:logging" ]
+    } else if (chip_device_platform == "rtl87x3g") {
+      deps += [ "${chip_root}/src/platform/realtek/RTL87X3G:logging" ]
     } else if (chip_device_platform == "realtek_bee") {
       deps += [ "${chip_root}/src/platform/realtek/BEE:logging" ]
     } else if (chip_device_platform == "asr") {
