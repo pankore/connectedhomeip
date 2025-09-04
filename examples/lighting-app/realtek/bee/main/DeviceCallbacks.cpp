@@ -233,7 +233,7 @@ void DeviceCallbacks::OnOnOffPostAttributeChangeCallback(EndpointId endpointId, 
                  ChipLogError(DeviceLayer, "Unhandled Attribute ID: '0x%04lx", attributeId));
     VerifyOrExit(endpointId == 1, ChipLogError(DeviceLayer, "Unexpected EndPoint ID: `0x%02x'", endpointId));
 
-    LightingMgr().InitiateAction(*value ? LightingManager::ON_ACTION : LightingManager::OFF_ACTION, 0, 0, value);
+    LightingMgr().InitiateAction(*value ? LightingManager::ON_ACTION : LightingManager::OFF_ACTION, 0, 0, value, false);
 
 exit:
     return;
@@ -250,7 +250,7 @@ void DeviceCallbacks::OnLevelPostAttributeChangeCallback(EndpointId endpointId, 
     {
         uint8_t tmp = *value;
         ChipLogProgress(DeviceLayer, "New level: %u ", tmp);
-        LightingMgr().InitiateAction(LightingManager::LEVEL_ACTION, 0, size, value);
+        LightingMgr().InitiateAction(LightingManager::LEVEL_ACTION, 0, size, value, false);
     }
     else
     {
@@ -354,7 +354,7 @@ void emberAfOnOffClusterInitCallback(EndpointId endpoint)
     {
         // Set actual state to the cluster state that was last persisted
         LightingMgr().InitiateAction(storedValue ? LightingManager::ON_ACTION : LightingManager::OFF_ACTION, 0, 0,
-                                     (uint8_t *) storedValue);
+                                     (uint8_t *) storedValue, false);
     }
 
     GetAppTask().UpdateClusterState();

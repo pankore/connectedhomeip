@@ -32,6 +32,10 @@
 
 #include <lib/core/CHIPError.h>
 
+typedef void (*P_LightStatusCallback)(uint8_t index,
+                                      uint8_t action,
+                                      uint8_t level);
+
 class LightingManager
 {
 public:
@@ -52,7 +56,7 @@ public:
     CHIP_ERROR Init();
     bool IsTurnedOn();
     uint8_t GetLevel();
-    bool InitiateAction(Action_t aAction, int32_t aActor, uint16_t size, uint8_t * value);
+    bool InitiateAction(Action_t aAction, int32_t aActor, uint16_t size, uint8_t * value, bool fake);
 
     using LightingCallback_fn = void (*)(Action_t);
 
@@ -66,8 +70,8 @@ private:
     LightingCallback_fn mActionInitiated_CB;
     LightingCallback_fn mActionCompleted_CB;
 
-    void Set(bool aOn);
-    void SetLevel(uint8_t aLevel);
+    void Set(bool aOn, bool fake);
+    void SetLevel(uint8_t aLevel, bool fake);
 
     static LightingManager sLight;
     static void TimerEventHandler(TimerHandle_t xTimer);

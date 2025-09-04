@@ -237,11 +237,11 @@ void AppTask::InitServer(intptr_t arg)
 
 void AppTask::InitGpio()
 {
-    LEDWidget::InitGpio();
+    // LEDWidget::InitGpio();
 
-    lightStatusLED.Init(LIGHT_STATE_LED);
-    identifyLED.Init(IDENTIFY_STATE_LED);
-    systemStatusLED.Init(SYSTEM_STATE_LED);
+    // lightStatusLED.Init(LIGHT_STATE_LED);
+    // identifyLED.Init(IDENTIFY_STATE_LED);
+    // systemStatusLED.Init(SYSTEM_STATE_LED);
 
     matter_gpio_init(ButtonEventHandler);
 }
@@ -307,7 +307,7 @@ void AppTask::LightingActionEventHandler(AppEvent * aEvent)
         }
 
         sAppTask.mSyncClusterToButtonAction = true;
-        LightingMgr().InitiateAction(action, 0, 0, 0);
+        LightingMgr().InitiateAction(action, 0, 0, 0, false);
     }
     if (aEvent->Type == AppEvent::kEventType_Level && aEvent->ButtonEvent.Action != 0)
     {
@@ -317,7 +317,7 @@ void AppTask::LightingActionEventHandler(AppEvent * aEvent)
         action      = LightingManager::LEVEL_ACTION;
 
         sAppTask.mSyncClusterToButtonAction = true;
-        LightingMgr().InitiateAction(action, 0, 1, &val);
+        LightingMgr().InitiateAction(action, 0, 1, &val, false);
     }
 }
 

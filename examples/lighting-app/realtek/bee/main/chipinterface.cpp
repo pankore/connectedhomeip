@@ -48,3 +48,14 @@ extern "C" void ChipTest(void)
         return;
     }
 }
+
+P_LightStatusCallback g_lightStatusCback = NULL;
+extern "C" void ChipRegLightStatusCback(P_LightStatusCallback cback)
+{
+    g_lightStatusCback = cback;
+}
+extern "C" void ChipUpdateLightStatus(uint8_t action, uint8_t level)
+{
+    LightingMgr().InitiateAction((LightingManager::Action_t)action, 0, 0, &level, true);
+    GetAppTask().UpdateClusterState();
+}

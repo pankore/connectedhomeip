@@ -20,6 +20,7 @@
 #include "LightingManager.h"
 #include <lib/support/logging/CHIPLogging.h>
 
+extern P_LightStatusCallback g_lightStatusCback;
 constexpr uint8_t kDefaultLevel = 1;
 
 LightingManager LightingManager::sLight;
@@ -48,7 +49,7 @@ void LightingManager::SetCallbacks(LightingCallback_fn aActionInitiated_CB, Ligh
     mActionCompleted_CB = aActionCompleted_CB;
 }
 
-bool LightingManager::InitiateAction(Action_t aAction, int32_t aActor, uint16_t size, uint8_t * value)
+bool LightingManager::InitiateAction(Action_t aAction, int32_t aActor, uint16_t size, uint8_t * value, bool fake)
 {
     bool action_initiated = false;
     State_t new_state;
@@ -102,11 +103,11 @@ bool LightingManager::InitiateAction(Action_t aAction, int32_t aActor, uint16_t 
 
         if (aAction == LEVEL_ACTION)
         {
-            SetLevel(*value);
+            SetLevel(*value, fake);
         }
         else if (aAction == ON_ACTION || aAction == OFF_ACTION)
         {
-            Set(new_state == kState_On);
+            Set(new_state == kState_On, fake);
         }
 
         if (mActionCompleted_CB)
@@ -118,13 +119,24 @@ bool LightingManager::InitiateAction(Action_t aAction, int32_t aActor, uint16_t 
     return action_initiated;
 }
 
-void LightingManager::SetLevel(uint8_t aLevel)
+void LightingManager::SetLevel(uint8_t aLevel, bool fake)
 {
     mLevel = aLevel;
-    lightStatusLED.SetLevel(mLevel);
+    
+    if(!fake)
+    {
+        if(g_lightStatusCback)
+        {
+            g_lightStatusCback(0, LEVEL_ACTION, aLevel);
+        }
+        else
+        {
+            lightStatusLED.SetLevel(mLevel);
+        }
+    }
 }
 
-void LightingManager::Set(bool aOn)
+void LightingManager::Set(bool aOn, bool fake)
 {
     if (aOn)
     {
@@ -134,5 +146,16 @@ void LightingManager::Set(bool aOn)
     {
         mState = kState_Off;
     }
-    lightStatusLED.Set(mState == kState_On);
+    
+    if(!fake)
+    {
+        if(g_lightStatusCback)
+        {
+            g_lightStatusCback(0, mState == kState_On ? ON_ACTION : OFF_ACTION, 0);
+        }
+        else
+        {
+            lightStatusLED.Set(mState == kState_On);
+        }
+    }
 }
