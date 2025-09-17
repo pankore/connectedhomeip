@@ -31,6 +31,7 @@
 #else
 #include <platform/OpenThread/GenericThreadStackManagerImpl_OpenThread.hpp>
 #endif
+#include "os_msg.h"
 #include "os_task.h"
 #include <lib/support/CHIPMem.h>
 #include <lib/support/CHIPPlatformMemory.h>
@@ -39,6 +40,12 @@
 #include <platform/OpenThread/OpenThreadUtils.h>
 #include <platform/ThreadStackManager.h>
 #include <platforms/openthread-system.h>
+
+#if WATCH_DOG_ENABLE
+#include "matter_wdt.h"
+
+static void *matter_wdt_io_queue_handle;
+#endif
 
 #if DLPS_EN
 #ifdef __cplusplus
@@ -92,6 +99,11 @@ CHIP_ERROR ThreadStackManagerImpl::InitThreadStack(otInstance * otInst)
 
     mThreadTask = NULL;
 
+#if WATCH_DOG_ENABLE
+    os_msg_queue_create(&matter_wdt_io_queue_handle, "wdtQ", 5, sizeof(T_IO_MSG));
+    matter_wdt_init(matter_wdt_io_queue_handle);
+#endif
+
     ChipLogProgress(DeviceLayer, "ThreadStackManagerImpl::InitThreadStack");
     // Initialize the OpenThread platform layer
     otSysInit(0, NULL);
@@ -140,6 +152,10 @@ CHIP_ERROR ThreadStackManagerImpl::_StartThreadTask()
         return CHIP_ERROR_INCORRECT_STATE;
     }
 
+#if WATCH_DOG_ENABLE
+    matter_wdt_watchdog_open();
+#endif
+
     xTaskCreate(ThreadTaskMain, CHIP_DEVICE_CONFIG_THREAD_TASK_NAME,
                 CHIP_DEVICE_CONFIG_THREAD_TASK_STACK_SIZE / sizeof(StackType_t), this, CHIP_DEVICE_CONFIG_THREAD_TASK_PRIORITY,
                 &mThreadTask);
@@ -157,8 +173,20 @@ void ThreadStackManagerImpl::ExecuteThreadTask(void)
     os_alloc_secure_ctx(1024);
 #endif
 
+    T_IO_MSG io_msg;
+
     while (true)
     {
+#if WATCH_DOG_ENABLE
+        while (os_msg_recv(matter_wdt_io_queue_handle, &io_msg, 0) == true)
+        {
+            if(io_msg.type == IO_MSG_TYPE_RESET_WDG_TIMER)
+            {
+                matter_wdt_watchdog_feed();
+            }
+        }
+#endif
+
         LockThreadStack();
         ProcessThreadActivity();
         UnlockThreadStack();

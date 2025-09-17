@@ -34,6 +34,7 @@
 #endif
 
 #define USE_FREERTOS_NATIVE_API 0
+#define WATCH_DOG_ENABLE        0
 
 extern "C" void otSysEventSignalPending(void);
 
