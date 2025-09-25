@@ -209,7 +209,7 @@ CHIP_ERROR RTKDACVendorProvider::SignWithDeviceAttestationKey(const ByteSpan & m
 
 #if CONFIG_FACTORY_DATA
 #if FEATURE_TRUSTZONE_ENABLE
-
+    ReturnErrorOnFailure(CHIP_ERROR_NOT_IMPLEMENTED);
 #else
     VerifyOrReturnError(pFactoryData->dac.dac_cert.value, CHIP_ERROR_PERSISTED_STORAGE_VALUE_NOT_FOUND);
     VerifyOrReturnError(pFactoryData->dac.dac_key.value, CHIP_ERROR_PERSISTED_STORAGE_VALUE_NOT_FOUND);
