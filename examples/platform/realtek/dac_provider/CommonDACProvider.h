@@ -1,6 +1,6 @@
 /*
  *
- *    Copyright (c) 2022 Project CHIP Authors
+ *    Copyright (c) 2025 Project CHIP Authors
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -19,7 +19,7 @@
 
 #include <credentials/DeviceAttestationCredsProvider.h>
 
-typedef chip::Credentials::DeviceAttestationCredentialsProvider * (*DacProviderGetterFunc)();
+using DacProviderGetterFunc = chip::Credentials::DeviceAttestationCredentialsProvider * (*) ();
 
 // Samples can register own implementations.
 void RegisterDACProviderGetter(DacProviderGetterFunc getter);

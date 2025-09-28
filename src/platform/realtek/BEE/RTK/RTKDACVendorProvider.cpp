@@ -1,6 +1,6 @@
 /*
  *
- *    Copyright (c) 2022 Project CHIP Authors
+ *    Copyright (c) 2025 Project CHIP Authors
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -208,7 +208,8 @@ CHIP_ERROR RTKDACVendorProvider::SignWithDeviceAttestationKey(const ByteSpan & m
     VerifyOrReturnError(outSignBuffer.size() >= signature.Capacity(), CHIP_ERROR_BUFFER_TOO_SMALL);
 
 #if CONFIG_FACTORY_DATA
-#if FEATURE_TRUSTZONE_ENABLE
+#if defined(FEATURE_TRUSTZONE_ENABLE) && (FEATURE_TRUSTZONE_ENABLE == 1)
+    ChipLogError(DeviceLayer, "TrustZone build: Device attestation is NOT implemented. Attestation will fail.");
     ReturnErrorOnFailure(CHIP_ERROR_NOT_IMPLEMENTED);
 #else
     VerifyOrReturnError(pFactoryData->dac.dac_cert.value, CHIP_ERROR_PERSISTED_STORAGE_VALUE_NOT_FOUND);

@@ -1,6 +1,6 @@
 /*
  *
- *    Copyright (c) 2022 Project CHIP Authors
+ *    Copyright (c) 2025 Project CHIP Authors
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -17,7 +17,6 @@
 
 #include "CommonDACProvider.h"
 #include <platform/realtek/BEE/RTK/RTKDACVendorProvider.h>
-#include <stddef.h>
 
 using namespace chip::DeviceLayer;
 
