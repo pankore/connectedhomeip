@@ -9,8 +9,6 @@ set(list_chip_main_sources chip_main_sources)
 
 include(${CMAKE_CURRENT_SOURCE_DIR}/includepath.cmake)
 
-message(STATUS "CMAKE_CURRENT_SOURCE_DIR: ${CMAKE_CURRENT_SOURCE_DIR}")
-
 if (matter_enable_rpc)
 set(pigweed_dir "${chip_dir}/third_party/pigweed/repo")
 
@@ -30,9 +28,9 @@ pw_set_backend(pw_assert.assert pw_assert.assert_compatibility_backend)
 pw_set_backend(pw_sys_io pw_sys_io.bee)
 pw_set_backend(pw_trace pw_trace_tokenized)
 
-add_subdirectory(${chip_dir}/third_party/pigweed/repo ${chip_dir}/examples/lighting-app/realtek/bee/out/pigweed)
-add_subdirectory(${chip_dir}/third_party/nanopb/repo ${chip_dir}/examples/lighting-app/realtek/bee/out/nanopb)
-add_subdirectory(${chip_dir}/examples/platform/realtek/bee/pw_sys_io ${chip_dir}/examples/lighting-app/realtek/bee/out/pw_sys_io)
+add_subdirectory(${chip_dir}/third_party/pigweed/repo ${chip_dir}/examples/lighting-app/realtek/rtl87x3g/out/pigweed)
+add_subdirectory(${chip_dir}/third_party/nanopb/repo ${chip_dir}/examples/lighting-app/realtek/rtl87x3g/out/nanopb)
+add_subdirectory(${chip_dir}/examples/platform/realtek/rtl87x3g/pw_sys_io ${chip_dir}/examples/lighting-app/realtek/rtl87x3g/out/pw_sys_io)
 
 pw_proto_library(attributes_service
   SOURCES
@@ -123,7 +121,7 @@ if (matter_enable_shell)
 list(
     APPEND ${list_chip_main_sources}
     #shell
-    ${chip_dir}/examples/platform/realtek/bee/shell/launch_shell.cpp
+    ${chip_dir}/examples/platform/realtek/rtl87x3g/shell/launch_shell.cpp
 )
 endif (matter_enable_shell)
 
@@ -131,8 +129,8 @@ if (matter_enable_rpc)
 list(
     APPEND ${list_chip_main_sources}
     #rpc
-    ${chip_dir}/examples/platform/realtek/bee/PigweedLogger.cpp
-    ${chip_dir}/examples/platform/realtek/bee/Rpc.cpp
+    ${chip_dir}/examples/platform/realtek/rtl87x3g/PigweedLogger.cpp
+    ${chip_dir}/examples/platform/realtek/rtl87x3g/Rpc.cpp
     ${chip_dir}/examples/common/pigweed/RpcService.cpp
     ${chip_dir}/examples/common/pigweed/realtek/PigweedLoggerMutex.cpp
 )
@@ -147,7 +145,7 @@ list(
     ${chip_dir}/src/app/clusters/ota-requestor/DefaultOTARequestorDriver.cpp
     ${chip_dir}/src/app/clusters/ota-requestor/DefaultOTARequestorStorage.cpp
     ${chip_dir}/src/app/clusters/ota-requestor/ota-requestor-server.cpp
-    ${chip_dir}/examples/platform/realtek/bee/ota/OTAInitializer.cpp
+    ${chip_dir}/examples/platform/realtek/rtl87x3g/ota/OTAInitializer.cpp
 )
 endif (matter_enable_ota_requestor)
 
@@ -155,13 +153,13 @@ list(
     APPEND ${list_chip_main_sources}
 
     ${chip_dir}/examples/lighting-app/lighting-common/src/ColorFormat.cpp
-    ${chip_dir}/examples/lighting-app/realtek/bee/main/AppTask.cpp
-    ${chip_dir}/examples/lighting-app/realtek/bee/main/LightingManager.cpp
-    ${chip_dir}/examples/lighting-app/realtek/bee/main/chipinterface.cpp
-    ${chip_dir}/examples/lighting-app/realtek/bee/main/DeviceCallbacks.cpp
-    ${chip_dir}/examples/lighting-app/realtek/bee/main/CHIPDeviceManager.cpp
-    ${chip_dir}/examples/lighting-app/realtek/bee/main/Globals.cpp
-    ${chip_dir}/examples/platform/realtek/bee/util/LEDWidget.cpp
+    ${chip_dir}/examples/lighting-app/realtek/rtl87x3g/main/AppTask.cpp
+    ${chip_dir}/examples/lighting-app/realtek/rtl87x3g/main/LightingManager.cpp
+    ${chip_dir}/examples/lighting-app/realtek/rtl87x3g/main/chipinterface.cpp
+    ${chip_dir}/examples/lighting-app/realtek/rtl87x3g/main/DeviceCallbacks.cpp
+    ${chip_dir}/examples/lighting-app/realtek/rtl87x3g/main/CHIPDeviceManager.cpp
+    ${chip_dir}/examples/lighting-app/realtek/rtl87x3g/main/Globals.cpp
+    ${chip_dir}/examples/platform/realtek/rtl87x3g/util/LEDWidget.cpp
     ${chip_dir}/examples/providers/DeviceInfoProviderImpl.cpp
 )
 
@@ -181,8 +179,8 @@ target_include_directories(
     ${chip_main}
     PUBLIC
     #rpc
-    ${chip_dir}/examples/platform/realtek/bee
-    ${chip_dir}/examples/platform/realtek/bee/pw_sys_io/public
+    ${chip_dir}/examples/platform/realtek/rtl87x3g
+    ${chip_dir}/examples/platform/realtek/rtl87x3g/pw_sys_io/public
     ${chip_dir}/examples/common
     ${chip_dir}/examples/common/pigweed
     ${chip_dir}/examples/common/pigweed/realtek
@@ -199,10 +197,10 @@ target_include_directories(
       ${chip_dir}/zzz_generated/lighting-app
       ${chip_dir}/zzz_generated/lighting-app/zap-generated
       ${chip_dir}/zzz_generated/app-common
-      ${chip_dir}/examples/lighting-app/realtek/bee/main/include
+      ${chip_dir}/examples/lighting-app/realtek/rtl87x3g/main/include
       ${chip_dir}/examples/lighting-app/lighting-common
       ${chip_dir}/examples/lighting-app/lighting-common/include
-      ${chip_dir}/examples/platform/realtek/bee
+      ${chip_dir}/examples/platform/realtek/rtl87x3g
       ${chip_dir}/examples/providers
       ${chip_dir_output}/gen/include
       ${chip_dir}/src/include/
@@ -247,7 +245,6 @@ list(
 
     -DINET_CONFIG_ENABLE_IPV4=0
     -DCHIP_PROJECT=1
-#    -DCHIP_DEVICE_LAYER_TARGET=Realtek_bee
     -DCHIP_HAVE_CONFIG_H
 )
 

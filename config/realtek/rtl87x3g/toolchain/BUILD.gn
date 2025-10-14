@@ -24,7 +24,7 @@ declare_args() {
   bee_cpu = ""
 }
 
-gcc_toolchain("bee") {
+gcc_toolchain("rtl87x3g") {
   ar = bee_ar
   cc = bee_cc
   cxx = bee_cxx
@@ -33,6 +33,6 @@ gcc_toolchain("bee") {
     current_os = "freertos"
     current_cpu = bee_cpu
     is_clang = false
-    import("${chip_root}/src/platform/realtek/BEE/args.gni")
+    import("${chip_root}/src/platform/realtek/RTL87X3G/args.gni")
   }
 }

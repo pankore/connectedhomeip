@@ -35,10 +35,10 @@ UART console.
 
 In order to build the example, it is recommended to use a Linux distribution.
 Please visit the supported Operating Systems list in
-[BUILDING.md](../../../docs/guides/BUILDING.md#prerequisites).
+[BUILDING.md](../../../../docs/guides/BUILDING.md#prerequisites).
 
 -   Make sure that below prerequisites are correctly installed (as described in
-    [BUILDING.md](../../../docs/guides/BUILDING.md#prerequisites))
+    [BUILDING.md](../../../../docs/guides/BUILDING.md#prerequisites))
 
 ```
 sudo apt-get install git gcc g++ pkg-config libssl-dev libdbus-1-dev libglib2.0-dev libavahi-client-dev ninja-build python3-venv python3-dev python3-pip unzip libgirepository1.0-dev libcairo2-dev libreadline-dev
@@ -47,7 +47,7 @@ sudo apt-get install git gcc g++ pkg-config libssl-dev libdbus-1-dev libglib2.0-
 -   Step 1: checkout Realtek specific submodules only
 
     ```bash
-    $ scripts/checkout_submodules.py --shallow --platform realtek_bee --recursive
+    $ scripts/checkout_submodules.py --shallow --platform realtek --recursive
     ```
 
 -   Step 1: Init REALTEK SDK

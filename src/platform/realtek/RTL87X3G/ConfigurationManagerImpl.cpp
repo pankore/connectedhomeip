@@ -26,7 +26,7 @@
 
 #include <platform/ConfigurationManager.h>
 #include <platform/DiagnosticDataProvider.h>
-#include <platform/Realtek_bee/BeeConfig.h>
+#include <platform/realtek/RTL87X3G/BeeConfig.h>
 #include <platform/internal/GenericConfigurationManagerImpl.ipp>
 #include <support/CodeUtils.h>
 #include <support/logging/CHIPLogging.h>
@@ -230,7 +230,7 @@ void ConfigurationManagerImpl::DoFactoryReset(intptr_t arg)
 
     // Restart the system.
     ChipLogProgress(DeviceLayer, "System restarting");
-    WDG_SystemReset(RESET_ALL, RESET_REASON_FACTORY_RESET);
+    WDG_SystemReset(RESET_ALL);
 }
 
 ConfigurationManager & ConfigurationMgrImpl()
