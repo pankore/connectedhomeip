@@ -28,9 +28,9 @@ pw_set_backend(pw_assert.assert pw_assert.assert_compatibility_backend)
 pw_set_backend(pw_sys_io pw_sys_io.bee)
 pw_set_backend(pw_trace pw_trace_tokenized)
 
-add_subdirectory(${chip_dir}/third_party/pigweed/repo ${chip_dir}/examples/lighting-app/realtek/bee/out/pigweed)
-add_subdirectory(${chip_dir}/third_party/nanopb/repo ${chip_dir}/examples/lighting-app/realtek/bee/out/nanopb)
-add_subdirectory(${chip_dir}/examples/platform/realtek/pw_sys_io ${chip_dir}/examples/lighting-app/realtek/bee/out/pw_sys_io)
+add_subdirectory(${chip_dir}/third_party/pigweed/repo ${chip_dir}/examples/lighting-app/realtek/common/out/pigweed)
+add_subdirectory(${chip_dir}/third_party/nanopb/repo ${chip_dir}/examples/lighting-app/realtek/common/out/nanopb)
+add_subdirectory(${chip_dir}/examples/platform/realtek/pw_sys_io ${chip_dir}/examples/lighting-app/realtek/common/out/pw_sys_io)
 
 pw_proto_library(attributes_service
   SOURCES
@@ -153,12 +153,12 @@ list(
     APPEND ${list_chip_main_sources}
 
     ${chip_dir}/examples/lighting-app/lighting-common/src/ColorFormat.cpp
-    ${chip_dir}/examples/lighting-app/realtek/bee/main/AppTask.cpp
-    ${chip_dir}/examples/lighting-app/realtek/bee/main/LightingManager.cpp
-    ${chip_dir}/examples/lighting-app/realtek/bee/main/chipinterface.cpp
-    ${chip_dir}/examples/lighting-app/realtek/bee/main/DeviceCallbacks.cpp
-    ${chip_dir}/examples/lighting-app/realtek/bee/main/CHIPDeviceManager.cpp
-    ${chip_dir}/examples/lighting-app/realtek/bee/main/Globals.cpp
+    ${chip_dir}/examples/lighting-app/realtek/common/main/AppTask.cpp
+    ${chip_dir}/examples/lighting-app/realtek/common/main/LightingManager.cpp
+    ${chip_dir}/examples/lighting-app/realtek/common/main/chipinterface.cpp
+    ${chip_dir}/examples/lighting-app/realtek/common/main/DeviceCallbacks.cpp
+    ${chip_dir}/examples/lighting-app/realtek/common/main/CHIPDeviceManager.cpp
+    ${chip_dir}/examples/lighting-app/realtek/common/main/Globals.cpp
     ${chip_dir}/examples/platform/realtek/util/LEDWidget.cpp
     ${chip_dir}/examples/providers/DeviceInfoProviderImpl.cpp
 )
@@ -197,7 +197,7 @@ target_include_directories(
       ${chip_dir}/zzz_generated/lighting-app
       ${chip_dir}/zzz_generated/lighting-app/zap-generated
       ${chip_dir}/zzz_generated/app-common
-      ${chip_dir}/examples/lighting-app/realtek/bee/main/include
+      ${chip_dir}/examples/lighting-app/realtek/common/main/include
       ${chip_dir}/examples/lighting-app/lighting-common
       ${chip_dir}/examples/lighting-app/lighting-common/include
       ${chip_dir}/examples/platform/realtek
