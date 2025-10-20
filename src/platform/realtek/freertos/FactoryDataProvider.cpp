@@ -15,6 +15,7 @@
  *    limitations under the License.
  */
 
+#include "CHIPDevicePlatformConfig.h"
 #include "FactoryDataProvider.h"
 #include "FactoryDataDecoder.h"
 #include <crypto/CHIPCryptoPAL.h>
@@ -27,7 +28,6 @@
 #include <platform/ConnectivityManager.h>
 #include <platform/internal/CHIPDeviceLayerInternal.h>
 #include <platform/internal/GenericConfigurationManagerImpl.ipp>
-#include <platform/realtek/BEE/CHIPDevicePlatformConfig.h>
 
 #define FACTORY_TEST 0
 #define BUFFER_LEN (2560)
