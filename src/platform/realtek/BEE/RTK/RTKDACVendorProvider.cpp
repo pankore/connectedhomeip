@@ -197,6 +197,27 @@ CHIP_ERROR RTKDACVendorProvider::GetProductAttestationIntermediateCert(MutableBy
     return CHIP_NO_ERROR;
 }
 
+#if FEATURE_TRUSTZONE_ENABLE && CONFIG_DAC_KEY_ENC
+CHIP_ERROR RTKDACVendorProvider::ImportDACKey()
+{
+    DAC_IMPORT_PARAM key_param = {};
+    key_param.encrypted_priv_key = const_cast<uint8_t *>(pFactoryData->dac.dac_key.value);
+    key_param.encrypted_priv_key_len = pFactoryData->dac.dac_key.len;
+
+    ByteSpan dacCertSpan{ pFactoryData->dac.dac_cert.value, pFactoryData->dac.dac_cert.len };
+    chip::Crypto::P256PublicKey dacPublicKey;
+    ReturnErrorOnFailure(chip::Crypto::ExtractPubkeyFromX509Cert(dacCertSpan, dacPublicKey));
+    key_param.public_key = dacPublicKey.Bytes();
+    key_param.public_key_len = dacPublicKey.Length();
+    ChipLogDetail(DeviceLayer, "ImportDACKey: encrypted_priv_key %p, encrypted_priv_key_len %d, public_key %p, public_key_len %d", 
+        key_param.encrypted_priv_key, key_param.encrypted_priv_key_len, key_param.public_key, key_param.public_key_len);
+
+    secure_app_function_call(SECURE_APP_FUNCTION_DAC_KEY_IMPORT, &key_param);
+    // add status that can be checked.
+    return CHIP_NO_ERROR;
+}
+#endif
+
 CHIP_ERROR RTKDACVendorProvider::SignWithDeviceAttestationKey(const ByteSpan & messageToSign, MutableByteSpan & outSignBuffer)
 {
     CHIP_ERROR err = CHIP_NO_ERROR;
@@ -209,8 +230,19 @@ CHIP_ERROR RTKDACVendorProvider::SignWithDeviceAttestationKey(const ByteSpan & m
 
 #if CONFIG_FACTORY_DATA
 #if FEATURE_TRUSTZONE_ENABLE && CONFIG_DAC_KEY_ENC
-    ChipLogError(DeviceLayer, "TrustZone build: Device attestation is NOT implemented. Attestation will fail.");
-    ReturnErrorOnFailure(CHIP_ERROR_NOT_IMPLEMENTED);
+    uint8_t sig_tmp_buf[Crypto::kP256_ECDSA_Signature_Length_Raw] = {};
+    uint32_t sig_len = 0;
+    ReturnErrorOnFailure(ImportDACKey());
+
+    DAC_SIGN_PARAM param = {};
+    param.msg = const_cast<uint8_t*>(messageToSign.data());
+    param.msg_len = messageToSign.size();
+    param.sig = sig_tmp_buf;
+    param.p_sig_len = &sig_len;
+
+    secure_app_function_call(SECURE_APP_FUNCTION_DAC_KEY_SIGN, &param);
+    // add status that can be checked.
+    return CopySpanToMutableSpan(ByteSpan{ sig_tmp_buf, static_cast<size_t>(sig_len) }, outSignBuffer);
 #else
     VerifyOrReturnError(pFactoryData->dac.dac_cert.value, CHIP_ERROR_PERSISTED_STORAGE_VALUE_NOT_FOUND);
     VerifyOrReturnError(pFactoryData->dac.dac_key.value, CHIP_ERROR_PERSISTED_STORAGE_VALUE_NOT_FOUND);

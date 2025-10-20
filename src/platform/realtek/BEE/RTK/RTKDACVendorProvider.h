@@ -22,7 +22,7 @@
 #include <platform/CommissionableDataProvider.h>
 #include <platform/DeviceInstanceInfoProvider.h>
 #include <platform/realtek/BEE/FactoryDataProvider.h>
-#if FEATURE_TRUSTZONE_ENABLE
+#if FEATURE_TRUSTZONE_ENABLE && CONFIG_DAC_KEY_ENC
 #include "rtk/include/nsc_veneer_customize.h"
 #endif
 
@@ -42,11 +42,10 @@ public:
     CHIP_ERROR SignWithDeviceAttestationKey(const ByteSpan & messageToSign, MutableByteSpan & outSignBuffer) override;
 
 private:
-    const FactoryData * pFactoryData;
-
-#if FEATURE_TRUSTZONE_ENABLE
-    rtk_matter_data param;
+#if FEATURE_TRUSTZONE_ENABLE && CONFIG_DAC_KEY_ENC
+    CHIP_ERROR ImportDACKey();
 #endif
+    const FactoryData * pFactoryData;  
 };
 
 } // namespace DeviceLayer
