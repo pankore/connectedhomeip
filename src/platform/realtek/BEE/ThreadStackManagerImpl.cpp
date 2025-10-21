@@ -50,7 +50,7 @@ static void *matter_wdt_io_queue_handle;
 
 namespace {
 #if defined(FEATURE_TRUSTZONE_ENABLE) && (FEATURE_TRUSTZONE_ENABLE == 1)
-constexpr size_t kThreadManagerSecureContextSize = 5 * 1024;
+constexpr size_t kThreadManagerSecureContextSize = 1024;
 static void AllocateThreadTaskSecureContext()
 {
     os_alloc_secure_ctx(kThreadManagerSecureContextSize);
