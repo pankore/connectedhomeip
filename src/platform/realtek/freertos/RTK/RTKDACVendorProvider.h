@@ -43,6 +43,7 @@ public:
 
 private:
 #if FEATURE_TRUSTZONE_ENABLE && CONFIG_DAC_KEY_ENC
+    bool mDACKeyImported = false;
     CHIP_ERROR ImportDACKey();
 #endif
     const FactoryData * pFactoryData;  

@@ -232,8 +232,13 @@ CHIP_ERROR RTKDACVendorProvider::SignWithDeviceAttestationKey(const ByteSpan & m
 
 #if CONFIG_FACTORY_DATA
 #if FEATURE_TRUSTZONE_ENABLE && CONFIG_DAC_KEY_ENC
+    if (!mDACKeyImported)
+    {
+        ReturnErrorOnFailure(ImportDACKey());
+        mDACKeyImported = true;
+    }
+
     uint8_t sig_tmp_buf[Crypto::kP256_ECDSA_Signature_Length_Raw] = {};
-    ReturnErrorOnFailure(ImportDACKey());
 
     DAC_SIGN_PARAM param = {};
     param.msg = messageToSign.data();
