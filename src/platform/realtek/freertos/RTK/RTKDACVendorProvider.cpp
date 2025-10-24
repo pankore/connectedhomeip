@@ -200,13 +200,13 @@ CHIP_ERROR RTKDACVendorProvider::GetProductAttestationIntermediateCert(MutableBy
 #if FEATURE_TRUSTZONE_ENABLE && CONFIG_DAC_KEY_ENC
 CHIP_ERROR RTKDACVendorProvider::ImportDACKey()
 {
-    DAC_IMPORT_PARAM key_param = {};
-    key_param.encrypted_priv_key = pFactoryData->dac.dac_key.value;
-    key_param.encrypted_priv_key_len = pFactoryData->dac.dac_key.len;
-
     ByteSpan dacCertSpan{ pFactoryData->dac.dac_cert.value, pFactoryData->dac.dac_cert.len };
     chip::Crypto::P256PublicKey dacPublicKey;
     ReturnErrorOnFailure(chip::Crypto::ExtractPubkeyFromX509Cert(dacCertSpan, dacPublicKey));
+    
+    DAC_IMPORT_PARAM key_param = {};
+    key_param.encrypted_priv_key = pFactoryData->dac.dac_key.value;
+    key_param.encrypted_priv_key_len = pFactoryData->dac.dac_key.len;
     key_param.public_key = dacPublicKey.Bytes();
     key_param.public_key_len = dacPublicKey.Length();
                        
@@ -236,7 +236,7 @@ CHIP_ERROR RTKDACVendorProvider::SignWithDeviceAttestationKey(const ByteSpan & m
     ReturnErrorOnFailure(ImportDACKey());
 
     DAC_SIGN_PARAM param = {};
-    param.msg = const_cast<uint8_t*>(messageToSign.data());
+    param.msg = messageToSign.data();
     param.msg_len = messageToSign.size();
     param.sig = sig_tmp_buf;
     param.sig_len = sizeof(sig_tmp_buf);
@@ -247,8 +247,12 @@ CHIP_ERROR RTKDACVendorProvider::SignWithDeviceAttestationKey(const ByteSpan & m
         ChipLogError(DeviceLayer, "secure_app_function_call DAC key sign %d", param.ret);
         return CHIP_ERROR_INTERNAL;
     }
-    // add status that can be checked.
-    return CopySpanToMutableSpan(ByteSpan{ sig_tmp_buf, static_cast<size_t>(sig_len) }, outSignBuffer);
+    if (param.sig_len > sizeof(sig_tmp_buf)) 
+    {
+        ChipLogError(DeviceLayer, "Signature length out of bounds: %d", param.sig_len);
+        return CHIP_ERROR_INTERNAL;
+    }
+    return CopySpanToMutableSpan(ByteSpan{ sig_tmp_buf, static_cast<size_t>(param.sig_len) }, outSignBuffer);
 #else
     VerifyOrReturnError(pFactoryData->dac.dac_cert.value, CHIP_ERROR_PERSISTED_STORAGE_VALUE_NOT_FOUND);
     VerifyOrReturnError(pFactoryData->dac.dac_key.value, CHIP_ERROR_PERSISTED_STORAGE_VALUE_NOT_FOUND);
