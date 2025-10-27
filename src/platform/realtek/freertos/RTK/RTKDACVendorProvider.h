@@ -42,11 +42,11 @@ public:
     CHIP_ERROR SignWithDeviceAttestationKey(const ByteSpan & messageToSign, MutableByteSpan & outSignBuffer) override;
 
 private:
-#if FEATURE_TRUSTZONE_ENABLE && CONFIG_DAC_KEY_ENC
+    const FactoryData * pFactoryData; 
     bool mDACKeyImported = false;
+#if FEATURE_TRUSTZONE_ENABLE && CONFIG_DAC_KEY_ENC
     CHIP_ERROR ImportDACKey();
-#endif
-    const FactoryData * pFactoryData;  
+#endif 
 };
 
 } // namespace DeviceLayer
