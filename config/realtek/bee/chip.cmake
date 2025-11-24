@@ -77,6 +77,14 @@ list(
     ${CHIP_ROOT}/third_party/nlio/repo/include
 )
 
+if (matter_enable_cg_secure_dac_vendor)
+    list(
+        APPEND CHIP_INC
+
+        ${CGCRYPTO_PATH}
+    )
+endif (matter_enable_cg_secure_dac_vendor)
+
 execute_process(
     COMMAND echo "mkdir CHIP output folder ..."
     COMMAND mkdir -p ${CHIP_OUTPUT}
@@ -191,7 +199,7 @@ endif (matter_enable_rotating_id)
 
 if (matter_enable_cg_secure_dac_vendor)
     string(APPEND CHIP_GN_ARGS "chip_use_cg_secure_dac_vendor = true\n")
-endif(matter_enable_cg_secure_dac_vendor)
+endif (matter_enable_cg_secure_dac_vendor)
 
 file(GENERATE OUTPUT ${CHIP_OUTPUT}/args.gn CONTENT ${CHIP_GN_ARGS})
 
