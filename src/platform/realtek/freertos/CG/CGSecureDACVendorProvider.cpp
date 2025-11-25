@@ -38,28 +38,21 @@ namespace DeviceLayer {
 
 CGSecureDACVendorProvider::CGSecureDACVendorProvider()
 {
-    int ret = 0;
-
-    ret = InitModule(0);
+    int ret = InitModule(0);
     if (ret) {
         ChipLogDetail(DeviceLayer, "Init Module failed %d", ret);
         this->initError = CHIP_ERROR_UNINITIALIZED;
     }
 
     this->initError = CHIP_NO_ERROR;
-
 }
 
 CGSecureDACVendorProvider::~CGSecureDACVendorProvider()
 {
-    int ret = 0;
-
-    if ((ret = ReleaseModule())) {
+    int ret = ReleaseModule();
+    if (ret != 0) {
         ChipLogDetail(DeviceLayer, "Release Module failed %d", ret);
-        this->initError = CHIP_ERROR_UNINITIALIZED;
     }
-
-    this->initError = CHIP_NO_ERROR;
 }
 
 CHIP_ERROR CGSecureDACVendorProvider::GetCertificationDeclaration(MutableByteSpan & outBuffer)
@@ -69,11 +62,9 @@ CHIP_ERROR CGSecureDACVendorProvider::GetCertificationDeclaration(MutableByteSpa
         return CHIP_ERROR_UNINITIALIZED;
     }
 
-    CHIP_ERROR err = CHIP_DEVICE_ERROR_CONFIG_NOT_FOUND;
-
 #if CHIP_USE_DEVICE_CONFIG_CERTIFICATION_DECLARATION
     constexpr uint8_t kCdForAllExamples[] = CHIP_DEVICE_CONFIG_CERTIFICATION_DECLARATION;
-    err                                   = CopySpanToMutableSpan(ByteSpan{ kCdForAllExamples }, outBuffer);
+    return CopySpanToMutableSpan(ByteSpan{ kCdForAllExamples }, outBuffer);
 #else
     const uint8_t kCdForAllExamples[] = {
             0x30, 0x81, 0xe8, 0x06, 0x09, 0x2a, 0x86, 0x48, 0x86, 0xf7, 0x0d, 0x01,
@@ -98,9 +89,8 @@ CHIP_ERROR CGSecureDACVendorProvider::GetCertificationDeclaration(MutableByteSpa
             0x87, 0xe4, 0x9a, 0xd9, 0x71, 0x11, 0x81
         };
 
-    err = CopySpanToMutableSpan(ByteSpan(kCdForAllExamples), outBuffer);
+    return CopySpanToMutableSpan(ByteSpan(kCdForAllExamples), outBuffer);
 #endif
-    return err;
 }
 
 CHIP_ERROR CGSecureDACVendorProvider::GetFirmwareInformation(MutableByteSpan & out_firmware_info_buffer)
@@ -121,17 +111,22 @@ CHIP_ERROR CGSecureDACVendorProvider::GetDeviceAttestationCert(MutableByteSpan &
     int ret = 0;
     uint16_t dac_len = 0;
 
-    if (CG_RTN_BUFFER_TOO_SMALL != (ret = GetCert(CGCRYPTO_OBJECT_ID_DEVICE_CERT, nullptr, &dac_len))) 
+    // Step 1: Probe for certificate length
+    ret = GetCert(CGCRYPTO_OBJECT_ID_DEVICE_CERT, nullptr, &dac_len);
+    if (ret != CG_RTN_BUFFER_TOO_SMALL)
     {
-        ChipLogDetail(DeviceLayer, "GetDeviceAttestationCert failed %d", ret);
+        ChipLogDetail(DeviceLayer, "GetDeviceAttestationCert: failed to get DAC length, err=%d", ret);
         return CHIP_ERROR_CERT_NOT_FOUND;
     }
 
+    // Step 2: Check if output buffer is large enough
     VerifyOrReturnError(outBuffer.size() >= dac_len, CHIP_ERROR_BUFFER_TOO_SMALL);
 
-    if ((ret = GetCert(CGCRYPTO_OBJECT_ID_DEVICE_CERT, outBuffer.data(), &dac_len))) 
+    // Step 3: Actually retrieve the certificate
+    ret = GetCert(CGCRYPTO_OBJECT_ID_DEVICE_CERT, outBuffer.data(), &dac_len);
+    if (ret != 0)
     {
-        ChipLogDetail(DeviceLayer, "GetDeviceAttestationCert failed %d", ret);
+        ChipLogDetail(DeviceLayer, "GetDeviceAttestationCert: failed to get DAC, err=%d", ret);
         return CHIP_ERROR_CERT_NOT_FOUND;
     }
 
@@ -147,18 +142,25 @@ CHIP_ERROR CGSecureDACVendorProvider::GetProductAttestationIntermediateCert(Muta
         return CHIP_ERROR_UNINITIALIZED;
     }
 
-    int ret = 0;
     uint16_t pai_len = 0;
+    int ret;
 
-    if (CG_RTN_BUFFER_TOO_SMALL != (ret = GetCert(CGCRYPTO_OBJECT_ID_TRUST_ANCHOR, nullptr, &pai_len))) {
-        ChipLogDetail(DeviceLayer, "GetProductAttestationIntermediateCert failed %d", ret);
+    // Step 1: Probe for certificate length
+    ret = GetCert(CGCRYPTO_OBJECT_ID_TRUST_ANCHOR, nullptr, &pai_len);
+    if (ret != CG_RTN_BUFFER_TOO_SMALL)
+    {
+        ChipLogDetail(DeviceLayer, "GetProductAttestationIntermediateCert: failed to get PAI length, err=%d", ret);
         return CHIP_ERROR_CERT_NOT_FOUND;
     }
 
+    // Step 2: Check if output buffer is large enough
     VerifyOrReturnError(outBuffer.size() >= pai_len, CHIP_ERROR_BUFFER_TOO_SMALL);
 
-    if ((ret = GetCert(CGCRYPTO_OBJECT_ID_TRUST_ANCHOR, outBuffer.data(), &pai_len))) {
-        ChipLogDetail(DeviceLayer, "GetProductAttestationIntermediateCert failed %d", ret);
+    // Step 3: Retrieve the real certificate data
+    ret = GetCert(CGCRYPTO_OBJECT_ID_TRUST_ANCHOR, outBuffer.data(), &pai_len);
+    if (ret != 0)
+    {
+        ChipLogDetail(DeviceLayer, "GetProductAttestationIntermediateCert: failed to get PAI, err=%d", ret);
         return CHIP_ERROR_CERT_NOT_FOUND;
     }
 
@@ -169,23 +171,37 @@ CHIP_ERROR CGSecureDACVendorProvider::GetProductAttestationIntermediateCert(Muta
 
 CHIP_ERROR CGSecureDACVendorProvider::SignWithDeviceAttestationKey(const ByteSpan & messageToSign, MutableByteSpan & outSignBuffer)
 {
+    if (!IsInitSuccess())
+    {
+        return CHIP_ERROR_UNINITIALIZED;
+    }
+
+    // Step 1: Validate input spans and signature buffer size
     VerifyOrReturnError(IsSpanUsable(outSignBuffer), CHIP_ERROR_INVALID_ARGUMENT);
     VerifyOrReturnError(IsSpanUsable(messageToSign), CHIP_ERROR_INVALID_ARGUMENT);
     VerifyOrReturnError(outSignBuffer.size() >= Crypto::kP256_ECDSA_Signature_Length_Raw, CHIP_ERROR_BUFFER_TOO_SMALL);
 
-    int ret = 0;
-    uint8_t asn1_sigature_buffer[Crypto::kMax_ECDSA_Signature_Length_Der];
-    MutableByteSpan asn1_signature_span(asn1_sigature_buffer);
+    // Step 2: Sign the data
+    uint8_t asn1_signature_buffer[Crypto::kMax_ECDSA_Signature_Length_Der];
+    MutableByteSpan asn1_signature_span(asn1_signature_buffer);
     uint16_t signature_length = asn1_signature_span.size();
-
-    if ((ret = SignData(CGCRYPTO_KEY_ID_DEVICE_KEY, CGCRYPTO_HASH_TYPE_SHA_256,
-                        messageToSign.data(), messageToSign.size(), asn1_signature_span.data(), &signature_length))) {
-        ChipLogDetail(DeviceLayer, "SignData failed %d", ret);
+    int ret = SignData(CGCRYPTO_KEY_ID_DEVICE_KEY, CGCRYPTO_HASH_TYPE_SHA_256,
+                       messageToSign.data(), messageToSign.size(),
+                       asn1_signature_span.data(), &signature_length);
+    if (ret != 0)
+    {
+        ChipLogDetail(DeviceLayer, "SignWithDeviceAttestationKey: SignData failed, err=%d", ret);
         return CHIP_ERROR_INTERNAL;
     }
-
     asn1_signature_span.reduce_size(signature_length);
-    ReturnErrorOnFailure(Crypto::EcdsaAsn1SignatureToRaw(Crypto::kP256_FE_Length, asn1_signature_span, outSignBuffer));
+
+    // Step 3: Convert ASN.1 signature to raw format
+    CHIP_ERROR err = Crypto::EcdsaAsn1SignatureToRaw(Crypto::kP256_FE_Length, asn1_signature_span, outSignBuffer);
+    if (err != CHIP_NO_ERROR)
+    {
+        ChipLogDetail(DeviceLayer, "SignWithDeviceAttestationKey: EcdsaAsn1SignatureToRaw failed, err=%" CHIP_ERROR_FORMAT, err);
+        return err;
+    }
 
     return CHIP_NO_ERROR;
 }
