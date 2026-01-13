@@ -25,6 +25,8 @@ list(
     -DDM_ODM_SUPPORT_TYPE=32
     -D_POSIX_REALTIME_SIGNALS
     -DCHIP_SHELL_MAX_TOKENS=11
+    -DMBEDTLS_USER_CONFIG_FILE=<rtl87x2g-mbedtls-config.h>
+    -DMBEDTLS_CONFIG_FILE=<mbedtls-config.h>
 )
 # Build Matter otcli
 if (matter_enable_otcli)
