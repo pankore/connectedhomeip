@@ -121,7 +121,7 @@ CHIP_ERROR BLEManagerImpl::_Init()
     // Check if BLE stack is initialized
     VerifyOrExit(!mFlags.Has(Flags::kAMEBABLEStackInitialized), err = CHIP_ERROR_INCORRECT_STATE);
 
-    err = MapBLEError(matter_ble_init(APP_MAX_LINKS));
+    // err = MapBLEError(matter_ble_init(APP_MAX_LINKS));
     matter_ble_cback_register((P_MATTER_BLE_CBACK) (ble_callback_dispatcher));
 
     SuccessOrExit(err);
