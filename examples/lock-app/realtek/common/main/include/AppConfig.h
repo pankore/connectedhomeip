@@ -38,6 +38,9 @@
 #define IDENTIFY_STATE_LED D2_LED
 #define SYSTEM_STATE_LED D3_LED
 
+#define APP_FUNCTION_TIMER_ID 0
+#define BOLT_LOCK_TIMER_ID 1
+
 // Time it takes in ms for the simulated actuator to move from one
 // state to another.
 #define ACTUATOR_MOVEMENT_PERIOS_MS 2000
