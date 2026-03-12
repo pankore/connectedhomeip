@@ -394,11 +394,6 @@ CHIP_ERROR AppTask::Init()
 
 void AppTask::ButtonEventHandler(uint8_t btnIdx, uint8_t btnPressed)
 {
-    if (btnIdx != APP_FUNCTION_BUTTON && btnIdx != APP_TOGGLE_BUTTON && btnIdx != APP_GENERIC_SWITCH_BUTTON)
-    {
-        return;
-    }
-
     if (!chip::DeviceManager::CHIPDeviceManager::GetInstance().IsInitDone())
     {
         return;
@@ -422,11 +417,76 @@ void AppTask::ButtonHandler(T_IO_MSG * p_msg)
 
     switch (key)
     {
-    case APP_TOGGLE_BUTTON:
+    case APP_MODE_BUTTON:
         if (btnPressed)
         {
-            ChipLogProgress(NotSpecified, "Toggle Button pressed");
-            LightSwitch::GetInstance().InitiateActionSwitch(1, Action::Toggle);
+            switch (LightSwitch::GetInstance().GetLightCtrlType())
+            {
+            case LightCtrlType::OnOff: {
+                LightSwitch::GetInstance().SetLightCtrlType(LightCtrlType::Level);
+                ChipLogProgress(DeviceLayer, "Light Control Type: Level");
+            }
+            break;
+
+            case LightCtrlType::Level: {
+                LightSwitch::GetInstance().SetLightCtrlType(LightCtrlType::Color);
+                ChipLogProgress(DeviceLayer, "Light Control Type: Color");
+            }
+            break;
+
+            case LightCtrlType::Color: {
+                LightSwitch::GetInstance().SetLightCtrlType(LightCtrlType::CT);
+                ChipLogProgress(DeviceLayer, "Light Control Type: Color Temperature");
+            }
+            break;
+
+            case LightCtrlType::CT: {
+                LightSwitch::GetInstance().SetLightCtrlType(LightCtrlType::OnOff);
+                ChipLogProgress(DeviceLayer, "Light Control Type: On/Off");
+            }
+            break;
+
+            default:
+                break;
+            }
+        }
+        break;
+
+    case APP_LIGHT_CTRL_BUTTON:
+        if (btnPressed)
+        {
+            switch (LightSwitch::GetInstance().GetLightCtrlType())
+            {
+            case LightCtrlType::OnOff: {
+                ChipLogProgress(NotSpecified, "On/Off Button pressed");
+                LightSwitch::GetInstance().InitiateActionSwitch(APP_LIGHT_SWITCH_ENDPOINT_ID, Action::Toggle);
+            }
+            break;
+
+            case LightCtrlType::Level: {
+                ChipLogProgress(NotSpecified, "Level Button pressed");
+                LightSwitch::GetInstance().DimmerChangeBrightness(APP_LIGHT_SWITCH_ENDPOINT_ID,
+                                                                  LightSwitch::GetInstance().GetNextBrightness());
+            }
+            break;
+
+            case LightCtrlType::Color: {
+                ChipLogProgress(NotSpecified, "Color Button pressed");
+                LightSwitch::GetInstance().ColorChange(APP_LIGHT_SWITCH_ENDPOINT_ID, LightSwitch::GetInstance().GetNextColorX(),
+                                                       LightSwitch::GetInstance().GetNextColorY());
+            }
+            break;
+
+            case LightCtrlType::CT: {
+                ChipLogProgress(NotSpecified, "Color Temperature Button pressed");
+                LightSwitch::GetInstance().ColorTemperatureChange(APP_LIGHT_SWITCH_ENDPOINT_ID,
+                                                                  LightSwitch::GetInstance().GetNextColorTemperature());
+            }
+            break;
+
+            default:
+                break;
+            }
         }
         break;
 
