@@ -22,8 +22,6 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-#include "LightingManager.h"
-
 #include "FreeRTOS.h"
 #include "app_msg.h"
 #include "timers.h" // provides FreeRTOS timer support
@@ -48,9 +46,6 @@ private:
     friend AppTask & GetAppTask(void);
 
     static void InitServer(intptr_t arg);
-
-    static void ActionInitiated(LightingManager::Action_t aAction);
-    static void ActionCompleted(LightingManager::Action_t aAction);
 
     void StartTimer(uint32_t aTimeoutMs);
     void CancelTimer(void);

@@ -41,7 +41,6 @@ endif (matter_enable_ota_requestor)
 list(
     APPEND ${list_chip_main_sources}
 
-    ${chip_dir}/examples/lighting-app/lighting-common/src/ColorFormat.cpp
     ${chip_dir}/examples/bridge-app/realtek/common/main/AppTask.cpp
     ${chip_dir}/examples/bridge-app/realtek/common/main/chipinterface.cpp
     ${chip_dir}/examples/bridge-app/realtek/common/main/DeviceCallbacks.cpp
@@ -77,8 +76,6 @@ target_include_directories(
       ${chip_dir}/zzz_generated/app-common
       ${chip_dir}/examples/bridge-app/realtek/common/main/include
       ${chip_dir}/examples/bridge-app/realtek/subdevice
-      ${chip_dir}/examples/lighting-app/lighting-common
-      ${chip_dir}/examples/lighting-app/lighting-common/include
       ${chip_dir}/examples/platform/realtek
       ${chip_dir}/examples/providers
       ${chip_dir_output}/gen/include
