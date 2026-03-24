@@ -68,8 +68,8 @@ public:
     void DimmerChangeBrightness(chip::EndpointId endpointId, uint8_t brightness);
     void ColorChange(chip::EndpointId endpointId, uint16_t colorX, uint16_t colorY);
     void ColorTemperatureChange(chip::EndpointId endpointId, uint16_t colorTemperatureMireds);
-    void GenericSwitchInitialPress();
-    void GenericSwitchReleasePress();
+    //void GenericSwitchInitialPress();
+    //void GenericSwitchReleasePress();
 
     void SetLightCtrlType(LightCtrlType aCtrlType) { mCurrentCtrlType = aCtrlType; }
     LightCtrlType GetLightCtrlType() { return mCurrentCtrlType; }

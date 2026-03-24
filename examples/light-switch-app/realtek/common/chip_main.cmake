@@ -53,7 +53,7 @@ add_library(
 
 chip_configure_data_model(chip_main
     INCLUDE_SERVER
-    ZAP_FILE ${matter_example_path}/../../light-switch-common/light-switch-app.zap
+    ZAP_FILE ${matter_example_path}/../data_model/light-switch-app-leshi.zap
 )
 
 target_include_directories(

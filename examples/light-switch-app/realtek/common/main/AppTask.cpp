@@ -490,19 +490,19 @@ void AppTask::ButtonHandler(T_IO_MSG * p_msg)
         }
         break;
 
-    case APP_GENERIC_SWITCH_BUTTON: {
-        if (btnPressed)
-        {
-            ChipLogProgress(NotSpecified, "Switch initial press");
-            LightSwitch::GetInstance().GenericSwitchInitialPress();
-        }
-        else
-        {
-            ChipLogProgress(NotSpecified, "Switch release press");
-            LightSwitch::GetInstance().GenericSwitchReleasePress();
-        }
-    }
-    break;
+    // case APP_GENERIC_SWITCH_BUTTON: {
+    //     if (btnPressed)
+    //     {
+    //         ChipLogProgress(NotSpecified, "Switch initial press");
+    //         LightSwitch::GetInstance().GenericSwitchInitialPress();
+    //     }
+    //     else
+    //     {
+    //         ChipLogProgress(NotSpecified, "Switch release press");
+    //         LightSwitch::GetInstance().GenericSwitchReleasePress();
+    //     }
+    // }
+    // break;
 
     case APP_FUNCTION_BUTTON: {
         if (btnPressed)
