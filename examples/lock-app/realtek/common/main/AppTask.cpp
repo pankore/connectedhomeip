@@ -232,10 +232,6 @@ void AppTask::AppTaskMain(void * pvParameter)
                 {
                     switch (io_msg.type)
                     {
-                    case IO_MSG_TYPE_QDECODE:
-                        matter_ble_handle_io_msg(&io_msg);
-                        break;
-
                     case IO_MSG_TYPE_GPIO:
                         ButtonHandler(&io_msg);
                         break;
@@ -249,6 +245,10 @@ void AppTask::AppTaskMain(void * pvParameter)
                         {
                             FunctionTimerEventHandler(&io_msg);
                         }
+                        break;
+
+                    default:
+                        matter_ble_handle_io_msg(&io_msg);
                         break;
 
                     default:
