@@ -214,6 +214,7 @@ void AppTask::AppTaskMain(void * pvParameter)
     if (err != CHIP_NO_ERROR)
     {
         ChipLogError(NotSpecified, "sAppTask.Init() failed: %" CHIP_ERROR_FORMAT, err.Format());
+        return;
     }
 
     while (true)
