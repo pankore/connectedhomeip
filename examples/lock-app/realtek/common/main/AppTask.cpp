@@ -250,9 +250,6 @@ void AppTask::AppTaskMain(void * pvParameter)
                     default:
                         matter_ble_handle_io_msg(&io_msg);
                         break;
-
-                    default:
-                        break;
                     }
                 }
             }
