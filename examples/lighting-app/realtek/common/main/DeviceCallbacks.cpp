@@ -424,11 +424,10 @@ void emberAfOnOffClusterInitCallback(EndpointId endpoint)
 
     HsvColor_t hsv;
     status = ColorControl::Attributes::CurrentHue::Get(endpoint, &hsv.h);
-    VerifyOrExit(status == Protocols::InteractionModel::Status::Success,
-                         ChipLogError(Zcl, "Failed to read CurrentHue value"));
+    VerifyOrExit(status == Protocols::InteractionModel::Status::Success, ChipLogError(Zcl, "Failed to read CurrentHue value"));
     status = ColorControl::Attributes::CurrentSaturation::Get(endpoint, &hsv.s);
     VerifyOrExit(status == Protocols::InteractionModel::Status::Success,
-                         ChipLogError(Zcl, "Failed to read CurrentSaturation value"));
+                 ChipLogError(Zcl, "Failed to read CurrentSaturation value"));
     ChipLogProgress(Zcl, "restore HSV color: %u|%u", hsv.h, hsv.s);
     LightingMgr().InitiateAction(LightingManager::COLOR_ACTION_HSV, 0, sizeof(hsv), (uint8_t *) &hsv);
 
