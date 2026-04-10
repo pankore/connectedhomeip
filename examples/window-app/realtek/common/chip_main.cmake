@@ -51,7 +51,7 @@ add_library(
 
 chip_configure_data_model(chip_main
     INCLUDE_SERVER
-    ZAP_FILE ${matter_example_path}/../../common/window-app.zap
+    ZAP_FILE ${matter_example_path}/../data_model/window-app.zap
 )
 
 target_include_directories(
