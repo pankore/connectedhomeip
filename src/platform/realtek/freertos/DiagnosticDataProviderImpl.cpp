@@ -164,6 +164,7 @@ CHIP_ERROR DiagnosticDataProviderImpl::GetBootReason(BootReasonType & bootReason
         bootReason = BootReasonType::kPowerOnReboot;
         break;
 
+    case RESET_REASON_DFU_UPDATE_IMG:
     case DFU_ACTIVE_RESET:
         bootReason = BootReasonType::kSoftwareUpdateCompleted;
         break;
