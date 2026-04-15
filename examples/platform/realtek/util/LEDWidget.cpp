@@ -28,14 +28,12 @@
 #include <stdlib.h>
 
 #ifdef BOARD_RTL8777G
-#define LED_PIN_NUM  5
-static T_LED_PWM_PARAM LED_PWM_PARAM[LED_PIN_NUM] = {
-    {P2_7, TIMER_PWM2, TIM2},
-    {P2_6, TIMER_PWM3, TIM3},
-    {P2_5, TIMER_PWM4, TIM4},
-    {P2_3, TIMER_PWM5, TIM5},
-    {P2_2, TIMER_PWM6, TIM6}
-};
+#define LED_PIN_NUM 5
+static T_LED_PWM_PARAM LED_PWM_PARAM[LED_PIN_NUM] = { { P2_7, TIMER_PWM2, TIM2 },
+                                                      { P2_6, TIMER_PWM3, TIM3 },
+                                                      { P2_5, TIMER_PWM4, TIM4 },
+                                                      { P2_3, TIMER_PWM5, TIM5 },
+                                                      { P2_2, TIMER_PWM6, TIM6 } };
 #else
 // #define LED_PIN_NUM  4
 // static T_LED_PWM_PARAM LED_PWM_PARAM[LED_PIN_NUM] = {

@@ -32,11 +32,11 @@ LightingManager LightingManager::sLight;
 
 CHIP_ERROR LightingManager::Init()
 {
-    mState = kState_Off;
-    mLevel = kDefaultLevel;
-    mXY    = kWhiteXY;
-    mHSV   = kWhiteHSV;
-    mRGB   = XYToRgb(mLevel, mXY.x, mXY.y);
+    mState       = kState_Off;
+    mLevel       = kDefaultLevel;
+    mXY          = kWhiteXY;
+    mHSV         = kWhiteHSV;
+    mRGB         = XYToRgb(mLevel, mXY.x, mXY.y);
     mCT.ctMireds = 0;
 
     return CHIP_NO_ERROR;
@@ -237,24 +237,25 @@ void LightingManager::Set(bool aOn)
 
 void LightingManager::UpdateLight()
 {
-    ChipLogProgress(NotSpecified, "UpdateLight: %d L:%d R:%d G:%d B:%d ct:%u", mState, mLevel, mRGB.r, mRGB.g, mRGB.b, mCT.ctMireds);
-    if(mState == kState_On)
+    ChipLogProgress(NotSpecified, "UpdateLight: %d L:%d R:%d G:%d B:%d ct:%u", mState, mLevel, mRGB.r, mRGB.g, mRGB.b,
+                    mCT.ctMireds);
+    if (mState == kState_On)
     {
-        if(mCT.ctMireds != 0)
+        if (mCT.ctMireds != 0)
         {
             RLED.SetLevel(0);
             GLED.SetLevel(0);
             BLED.SetLevel(0);
-            if(mCT.ctMireds <= 303)
+            if (mCT.ctMireds <= 303)
             {
                 WLED.SetLevel(mLevel);
-                //WLED.Set(true);
+                // WLED.Set(true);
                 CLED.SetLevel(0);
             }
             else
             {
                 CLED.SetLevel(mLevel);
-                //CLED.Set(true);
+                // CLED.Set(true);
                 WLED.SetLevel(0);
             }
         }
@@ -277,10 +278,8 @@ void LightingManager::UpdateLight()
         mCT.ctMireds = 0;
     }
 
-
-    
-    //lightStatusLED.SetLevel(mLevel);
-    //lightStatusLED.Set(mState == kState_On);
+    // lightStatusLED.SetLevel(mLevel);
+    // lightStatusLED.Set(mState == kState_On);
 
     // RLED.SetLevel(mRGB.r);
     // //RLED.Set(mRGB.r > 13);
@@ -289,7 +288,6 @@ void LightingManager::UpdateLight()
     // BLED.SetLevel(mRGB.b);
     // //BLED.Set(mRGB.b > 13);
 
-    
     // WLED.SetLevel(mLevel);
     // WLED.Set((mCT.ctMireds > 200) && (mState == kState_On));
     // CLED.SetLevel(mLevel);
