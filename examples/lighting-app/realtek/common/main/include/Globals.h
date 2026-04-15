@@ -22,3 +22,9 @@
 extern LEDWidget lightStatusLED;
 extern LEDWidget identifyLED;
 extern LEDWidget systemStatusLED;
+
+extern LEDWidget RLED;
+extern LEDWidget GLED;
+extern LEDWidget BLED;
+extern LEDWidget WLED;
+extern LEDWidget CLED;

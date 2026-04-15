@@ -25,9 +25,11 @@
 #define SW3_BUTTON 2
 #define SW4_BUTTON 3
 
-#define D1_LED 0
-#define D2_LED 1
-#define D3_LED 2
+#define D0_LED 0
+#define D1_LED 1
+#define D2_LED 2
+#define D3_LED 3
+#define D4_LED 4
 
 #define APP_TASK_NAME "APP"
 #define APP_TOGGLE_BUTTON SW1_BUTTON
@@ -35,8 +37,13 @@
 #define APP_LEVEL_BUTTON SW3_BUTTON
 #define APP_BLE_ADV_BUTTON SW4_BUTTON
 
-#define LIGHT_STATE_LED D1_LED
-#define IDENTIFY_STATE_LED D2_LED
-#define SYSTEM_STATE_LED D3_LED
+#define LIGHT_STATE_LED D0_LED
+#define IDENTIFY_STATE_LED D1_LED
+#define SYSTEM_STATE_LED D1_LED
+#define R_LED D2_LED
+#define G_LED D1_LED
+#define B_LED D0_LED
+#define W_LED D3_LED
+#define C_LED D4_LED
 
 #endif // APP_CONFIG_H

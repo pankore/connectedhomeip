@@ -20,3 +20,9 @@
 LEDWidget lightStatusLED;
 LEDWidget identifyLED;
 LEDWidget systemStatusLED;
+
+LEDWidget RLED;
+LEDWidget GLED;
+LEDWidget BLED;
+LEDWidget WLED;
+LEDWidget CLED;

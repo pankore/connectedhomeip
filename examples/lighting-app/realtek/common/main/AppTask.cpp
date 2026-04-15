@@ -290,9 +290,15 @@ void AppTask::InitGpio()
 {
     LEDWidget::InitGpio();
 
-    lightStatusLED.Init(LIGHT_STATE_LED);
-    identifyLED.Init(IDENTIFY_STATE_LED);
-    systemStatusLED.Init(SYSTEM_STATE_LED);
+    // lightStatusLED.Init(LIGHT_STATE_LED);
+    // identifyLED.Init(IDENTIFY_STATE_LED);
+    // systemStatusLED.Init(SYSTEM_STATE_LED);
+
+    RLED.Init(R_LED, 1, 254, 0);
+    GLED.Init(G_LED, 1, 254, 0);
+    BLED.Init(B_LED, 1, 254, 0);
+    WLED.Init(W_LED, 1, 254, 0);
+    CLED.Init(C_LED, 1, 254, 0);
 
     matter_gpio_init(ButtonEventHandler);
 }

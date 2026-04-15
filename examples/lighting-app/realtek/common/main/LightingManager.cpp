@@ -37,6 +37,7 @@ CHIP_ERROR LightingManager::Init()
     mXY    = kWhiteXY;
     mHSV   = kWhiteHSV;
     mRGB   = XYToRgb(mLevel, mXY.x, mXY.y);
+    mCT.ctMireds = 0;
 
     return CHIP_NO_ERROR;
 }
@@ -140,6 +141,18 @@ bool LightingManager::InitiateAction(Action_t aAction, int32_t aActor, uint16_t 
             new_state = kState_On;
         }
     }
+    else if (aAction == COLOR_ACTION_CT)
+    {
+        action_initiated = true;
+        if ((ct.ctMireds <= 154) && (ct.ctMireds >= 454))
+        {
+            new_state = kState_Off;
+        }
+        else
+        {
+            new_state = kState_On;
+        }
+    }
 
     if (action_initiated)
     {
@@ -224,7 +237,61 @@ void LightingManager::Set(bool aOn)
 
 void LightingManager::UpdateLight()
 {
-    ChipLogProgress(NotSpecified, "UpdateLight: %d L:%d R:%d G:%d B:%d", mState, mLevel, mRGB.r, mRGB.g, mRGB.b);
-    lightStatusLED.SetLevel(mLevel);
-    lightStatusLED.Set(mState == kState_On);
+    ChipLogProgress(NotSpecified, "UpdateLight: %d L:%d R:%d G:%d B:%d ct:%u", mState, mLevel, mRGB.r, mRGB.g, mRGB.b, mCT.ctMireds);
+    if(mState == kState_On)
+    {
+        if(mCT.ctMireds != 0)
+        {
+            RLED.SetLevel(0);
+            GLED.SetLevel(0);
+            BLED.SetLevel(0);
+            if(mCT.ctMireds <= 303)
+            {
+                WLED.SetLevel(mLevel);
+                //WLED.Set(true);
+                CLED.SetLevel(0);
+            }
+            else
+            {
+                CLED.SetLevel(mLevel);
+                //CLED.Set(true);
+                WLED.SetLevel(0);
+            }
+        }
+        else
+        {
+            RLED.SetLevel(mRGB.r);
+            GLED.SetLevel(mRGB.g);
+            BLED.SetLevel(mRGB.b);
+            WLED.SetLevel(0);
+            CLED.SetLevel(0);
+        }
+    }
+    else
+    {
+        RLED.SetLevel(0);
+        GLED.SetLevel(0);
+        BLED.SetLevel(0);
+        WLED.SetLevel(0);
+        CLED.SetLevel(0);
+        mCT.ctMireds = 0;
+    }
+
+
+    
+    //lightStatusLED.SetLevel(mLevel);
+    //lightStatusLED.Set(mState == kState_On);
+
+    // RLED.SetLevel(mRGB.r);
+    // //RLED.Set(mRGB.r > 13);
+    // GLED.SetLevel(mRGB.g);
+    // //GLED.Set(mRGB.g > 13);
+    // BLED.SetLevel(mRGB.b);
+    // //BLED.Set(mRGB.b > 13);
+
+    
+    // WLED.SetLevel(mLevel);
+    // WLED.Set((mCT.ctMireds > 200) && (mState == kState_On));
+    // CLED.SetLevel(mLevel);
+    // CLED.Set((mCT.ctMireds <=200) && (mState == kState_On));
 }
