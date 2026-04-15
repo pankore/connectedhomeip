@@ -2109,8 +2109,6 @@ endpoint 0 {
     callback attribute softwareVersionString;
     callback attribute manufacturingDate;
     callback attribute partNumber;
-    callback attribute productURL;
-    callback attribute productLabel;
     callback attribute serialNumber;
     callback attribute localConfigDisabled;
     callback attribute uniqueID;
@@ -2392,7 +2390,6 @@ endpoint 1 {
     callback attribute clusterRevision;
 
     handle command Identify;
-    handle command TriggerEffect;
   }
 
   server cluster Groups {
