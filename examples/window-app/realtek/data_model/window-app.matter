@@ -2377,7 +2377,7 @@ endpoint 0 {
   }
 }
 endpoint 1 {
-  device type ma_windowcovering = 514, version 2;
+  device type ma_windowcovering = 514, version 7;
 
 
   server cluster Identify {
@@ -2426,10 +2426,6 @@ endpoint 1 {
 
   server cluster WindowCovering {
     ram      attribute type default = 0x08;
-    ram      attribute physicalClosedLimitLift default = 0xFFFF;
-    ram      attribute physicalClosedLimitTilt default = 0xFFFF;
-    persist  attribute currentPositionLift default = 0;
-    persist  attribute currentPositionTilt default = 0;
     persist  attribute numberOfActuationsLift default = 0x0000;
     persist  attribute numberOfActuationsTilt default = 0x0000;
     persist  attribute configStatus default = 0x03;
@@ -2441,24 +2437,16 @@ endpoint 1 {
     ram      attribute endProductType default = 0x00;
     persist  attribute currentPositionLiftPercent100ths default = 0;
     persist  attribute currentPositionTiltPercent100ths default = 0;
-    persist  attribute installedOpenLimitLift default = 0x0000;
-    persist  attribute installedClosedLimitLift default = 0xFFFF;
-    persist  attribute installedOpenLimitTilt default = 0x0000;
-    persist  attribute installedClosedLimitTilt default = 0xFFFF;
     persist  attribute mode default = 0x0;
     ram      attribute safetyStatus default = 0x0000;
     callback attribute generatedCommandList;
     callback attribute acceptedCommandList;
     callback attribute attributeList;
-    ram      attribute featureMap default = 0x001F;
-    callback attribute clusterRevision;
 
     handle command UpOrOpen;
     handle command DownOrClose;
     handle command StopMotion;
-    handle command GoToLiftValue;
     handle command GoToLiftPercentage;
-    handle command GoToTiltValue;
     handle command GoToTiltPercentage;
   }
 }
