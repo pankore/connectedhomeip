@@ -288,7 +288,12 @@ void AppTask::InitServer(intptr_t arg)
 
 void AppTask::InitGpio()
 {
-    LEDWidget::InitGpio();
+    T_LED_PWM_PARAM LED_PWM_PARAM[5] = { { P2_7, TIMER_PWM2, TIM2 },
+                                         { P2_6, TIMER_PWM3, TIM3 },
+                                         { P2_5, TIMER_PWM4, TIM4 },
+                                         { P2_3, TIMER_PWM5, TIM5 },
+                                         { P2_2, TIMER_PWM6, TIM6 } };
+    LEDWidget::InitGpio(LED_PWM_PARAM, 5);
 
     // lightStatusLED.Init(LIGHT_STATE_LED);
     // identifyLED.Init(IDENTIFY_STATE_LED);
