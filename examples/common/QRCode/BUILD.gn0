@@ -12,17 +12,21 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import("//build_overrides/chip.gni")
+config("qrcode-common_config") {
+  include_dirs = [ "repo/c" ]
 
-mbedtls_target = "//config/realtek/chip-cmake-freertos/mbedtls:mbedtls"
+  cflags = [ "-Wno-type-limits" ]
+}
 
-chip_device_platform = "realtek_bee"
-chip_mdns = "platform"
+static_library("QRCode") {
+  output_name = "libqrcode-common"
 
-lwip_platform = "external"
-lwip_debug = false
+  sources = [
+    "repo/c/qrcodegen.c",
+    "repo/c/qrcodegen.h",
+  ]
 
-chip_inet_config_enable_ipv4 = false
-chip_inet_config_enable_tcp_endpoint = false
+  public_configs = [ ":qrcode-common_config" ]
 
-chip_build_tests = false
+  output_dir = "${root_out_dir}/lib"
+}
