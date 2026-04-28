@@ -43,10 +43,10 @@
 #include <CHIPDeviceManager.h>
 #include <DeviceCallbacks.h>
 
+#include "matter_ble.h"
 #include <os_mem.h>
 #include <os_msg.h>
 #include <os_task.h>
-#include "matter_ble.h"
 
 #if CONFIG_ENABLE_PW_RPC
 #include "Rpc.h"
@@ -65,9 +65,9 @@ using namespace app::Clusters::Descriptor::Structs;
 
 #include <platform/CHIPDeviceLayer.h>
 
-#define MAX_NUMBER_OF_GAP_MESSAGE     0x10      //!<  GAP message queue size
-#define MAX_NUMBER_OF_IO_MESSAGE      0x10      //!<  IO message queue size
-#define MAX_NUMBER_OF_EVENT_MESSAGE   (MAX_NUMBER_OF_GAP_MESSAGE + MAX_NUMBER_OF_IO_MESSAGE)    //!< Event message queue size
+#define MAX_NUMBER_OF_GAP_MESSAGE 0x10                                                     //!<  GAP message queue size
+#define MAX_NUMBER_OF_IO_MESSAGE 0x10                                                      //!<  IO message queue size
+#define MAX_NUMBER_OF_EVENT_MESSAGE (MAX_NUMBER_OF_GAP_MESSAGE + MAX_NUMBER_OF_IO_MESSAGE) //!< Event message queue size
 
 #define FACTORY_RESET_CANCEL_WINDOW_TIMEOUT 5000
 #define RESET_TRIGGER_TIMEOUT 1500
@@ -135,9 +135,9 @@ const SemanticTagStruct::Type switch13TagList[] = { { .namespaceID = kNamespaceS
 
 static DeviceCallbacks EchoCallbacks;
 
-static void *app_task_handle = NULL;   //!< APP Task handle
-static void *app_evt_queue_handle = NULL;  //!< Event queue handle
-static void *app_io_queue_handle = NULL;   //!< IO queue handle
+static void * app_task_handle      = NULL; //!< APP Task handle
+static void * app_evt_queue_handle = NULL; //!< Event queue handle
+static void * app_io_queue_handle  = NULL; //!< IO queue handle
 
 // NOTE! This key is for test/certification only and should not be available in production devices!
 static const uint8_t sTestEventTriggerEnableKey[TestEventTriggerDelegate::kEnableKeyLength] = { 0x00, 0x11, 0x22, 0x33, 0x44, 0x55,
@@ -225,11 +225,11 @@ void UnlockOpenThreadTask(void)
     chip::DeviceLayer::ThreadStackMgr().UnlockThreadStack();
 }
 
-bool AppTask::PostMessage(T_IO_MSG *p_msg)
+bool AppTask::PostMessage(T_IO_MSG * p_msg)
 {
     uint8_t event = EVENT_IO_TO_APP;
 
-    if(app_evt_queue_handle == NULL || app_io_queue_handle == NULL)
+    if (app_evt_queue_handle == NULL || app_io_queue_handle == NULL)
     {
         return false;
     }
@@ -251,7 +251,7 @@ bool AppTask::PostMessage(T_IO_MSG *p_msg)
 
 CHIP_ERROR AppTask::StartAppTask()
 {
-    if(!os_task_create(&app_task_handle, APP_TASK_NAME, AppTaskMain, 0, APP_TASK_STACK_SIZE, APP_TASK_PRIORITY))
+    if (!os_task_create(&app_task_handle, APP_TASK_NAME, AppTaskMain, 0, APP_TASK_STACK_SIZE, APP_TASK_PRIORITY))
     {
         return CHIP_ERROR_NO_MEMORY;
     }
@@ -271,8 +271,7 @@ void AppTask::AppTaskMain(void * pvParameter)
     os_msg_queue_create(&app_io_queue_handle, "ioQ", MAX_NUMBER_OF_IO_MESSAGE, sizeof(T_IO_MSG));
     os_msg_queue_create(&app_evt_queue_handle, "evtQ", MAX_NUMBER_OF_EVENT_MESSAGE, sizeof(uint8_t));
 
-    gap_start_bt_stack(app_evt_queue_handle, app_io_queue_handle,
-                       MAX_NUMBER_OF_GAP_MESSAGE);
+    gap_start_bt_stack(app_evt_queue_handle, app_io_queue_handle, MAX_NUMBER_OF_GAP_MESSAGE);
     matter_ble_queue_init(app_evt_queue_handle, app_io_queue_handle);
 
     err = sAppTask.Init();
@@ -291,7 +290,7 @@ void AppTask::AppTaskMain(void * pvParameter)
                 T_IO_MSG io_msg;
                 if (os_msg_recv(app_io_queue_handle, &io_msg, 0) == true)
                 {
-                    switch(io_msg.type)
+                    switch (io_msg.type)
                     {
                     case IO_MSG_TYPE_GPIO:
                         ButtonHandler(&io_msg);
@@ -420,7 +419,7 @@ void AppTask::ButtonEventHandler(uint8_t btnIdx, uint8_t btnPressed)
     }
 
     ChipLogProgress(NotSpecified, "ButtonEventHandler %d, %d", btnIdx, btnPressed);
-    
+
     T_IO_MSG io_msg;
 
     io_msg.type    = IO_MSG_TYPE_GPIO;
@@ -430,9 +429,9 @@ void AppTask::ButtonEventHandler(uint8_t btnIdx, uint8_t btnPressed)
     PostMessage(&io_msg);
 }
 
-void AppTask::ButtonHandler(T_IO_MSG *p_msg)
+void AppTask::ButtonHandler(T_IO_MSG * p_msg)
 {
-    uint8_t key = p_msg->subtype;
+    uint8_t key         = p_msg->subtype;
     uint32_t btnPressed = p_msg->u.param;
 
     switch (key)
@@ -445,56 +444,54 @@ void AppTask::ButtonHandler(T_IO_MSG *p_msg)
         }
         break;
 
-    case APP_GENERIC_SWITCH_BUTTON:
+    case APP_GENERIC_SWITCH_BUTTON: {
+        if (btnPressed)
         {
-            if (btnPressed)
+            ChipLogProgress(NotSpecified, "Switch initial press");
+            LightSwitch::GetInstance().GenericSwitchInitialPress();
+        }
+        else
+        {
+            ChipLogProgress(NotSpecified, "Switch release press");
+            LightSwitch::GetInstance().GenericSwitchReleasePress();
+        }
+    }
+    break;
+
+    case APP_FUNCTION_BUTTON: {
+        if (btnPressed)
+        {
+            if (!sAppTask.mFunctionTimerActive && sAppTask.mFunction == kFunction_NoneSelected)
             {
-                ChipLogProgress(NotSpecified, "Switch initial press");
-                LightSwitch::GetInstance().GenericSwitchInitialPress();
-            }
-            else
-            {
-                ChipLogProgress(NotSpecified, "Switch release press");
-                LightSwitch::GetInstance().GenericSwitchReleasePress();
+                ChipLogProgress(NotSpecified, "[BTN] Hold to select function:");
+                ChipLogProgress(NotSpecified, "[BTN] - Reset (0-1.5s)");
+                ChipLogProgress(NotSpecified, "[BTN] - Factory Reset (>6.5s)");
+
+                sAppTask.StartTimer(RESET_TRIGGER_TIMEOUT);
+                sAppTask.mFunction = kFunction_Reset;
             }
         }
-        break;
-
-    case APP_FUNCTION_BUTTON:
+        else
         {
-            if (btnPressed)
+            // If the button was released before 1.5sec, trigger RESET.
+            if (sAppTask.mFunctionTimerActive && sAppTask.mFunction == kFunction_Reset)
             {
-                if (!sAppTask.mFunctionTimerActive && sAppTask.mFunction == kFunction_NoneSelected)
-                {
-                    ChipLogProgress(NotSpecified, "[BTN] Hold to select function:");
-                    ChipLogProgress(NotSpecified, "[BTN] - Reset (0-1.5s)");
-                    ChipLogProgress(NotSpecified, "[BTN] - Factory Reset (>6.5s)");
+                sAppTask.CancelTimer();
+                sAppTask.mFunction = kFunction_NoneSelected;
 
-                    sAppTask.StartTimer(RESET_TRIGGER_TIMEOUT);
-                    sAppTask.mFunction = kFunction_Reset;
-                }
+                chip::DeviceManager::CHIPDeviceManager::GetInstance().Shutdown();
+                WDG_SystemReset(RESET_ALL, SW_RESET_APP_START);
             }
-            else
+            else if (sAppTask.mFunctionTimerActive && sAppTask.mFunction == kFunction_FactoryReset)
             {
-                // If the button was released before 1.5sec, trigger RESET.
-                if (sAppTask.mFunctionTimerActive && sAppTask.mFunction == kFunction_Reset)
-                {
-                    sAppTask.CancelTimer();
-                    sAppTask.mFunction = kFunction_NoneSelected;
-
-                    chip::DeviceManager::CHIPDeviceManager::GetInstance().Shutdown();
-                    WDG_SystemReset(RESET_ALL, SW_RESET_APP_START);
-                }
-                else if (sAppTask.mFunctionTimerActive && sAppTask.mFunction == kFunction_FactoryReset)
-                {
-                    EchoCallbacks.UpdateStatusLED();
-                    sAppTask.CancelTimer();
-                    sAppTask.mFunction = kFunction_NoneSelected;
-                    ChipLogProgress(NotSpecified, "[BTN] Factory Reset has been Canceled");
-                }
+                EchoCallbacks.UpdateStatusLED();
+                sAppTask.CancelTimer();
+                sAppTask.mFunction = kFunction_NoneSelected;
+                ChipLogProgress(NotSpecified, "[BTN] Factory Reset has been Canceled");
             }
         }
-        break;
+    }
+    break;
 
     default:
         break;
@@ -512,7 +509,7 @@ void AppTask::TimerEventHandler(chip::System::Layer * aLayer, void * aAppState)
     PostMessage(&timer_msg);
 }
 
-void AppTask::FunctionTimerEventHandler(T_IO_MSG *p_msg)
+void AppTask::FunctionTimerEventHandler(T_IO_MSG * p_msg)
 {
     // If we reached here, the button was held for factoryreset
     if (sAppTask.mFunctionTimerActive && sAppTask.mFunction == kFunction_Reset)

@@ -53,13 +53,13 @@ private:
     void CancelTimer(void);
 
     static void ButtonEventHandler(uint8_t btnIdx, uint8_t btnPressed);
-    static void ButtonHandler(T_IO_MSG *p_msg);
+    static void ButtonHandler(T_IO_MSG * p_msg);
 
-    static void FunctionTimerEventHandler(T_IO_MSG *p_msg);
+    static void FunctionTimerEventHandler(T_IO_MSG * p_msg);
 
     static void TimerEventHandler(chip::System::Layer * aLayer, void * aAppState);
 
-    static bool PostMessage(T_IO_MSG *p_msg);
+    static bool PostMessage(T_IO_MSG * p_msg);
 
     enum Function_t
     {
