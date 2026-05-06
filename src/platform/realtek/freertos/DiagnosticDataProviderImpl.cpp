@@ -47,21 +47,21 @@ DiagnosticDataProviderImpl & DiagnosticDataProviderImpl::GetDefaultInstance()
 
 CHIP_ERROR DiagnosticDataProviderImpl::GetCurrentHeapFree(uint64_t & currentHeapFree)
 {
-    size_t freeHeapSize = os_mem_peek(RAM_TYPE_DATA_ON);
+    size_t freeHeapSize = os_mem_peek(OS_MEM_TYPE_DATA);
     currentHeapFree     = static_cast<uint64_t>(freeHeapSize);
     return CHIP_NO_ERROR;
 }
 
 CHIP_ERROR DiagnosticDataProviderImpl::GetCurrentHeapUsed(uint64_t & currentHeapUsed)
 {
-    size_t usedHeapSize = NS_HEAP_SIZE - os_mem_peek(RAM_TYPE_DATA_ON);
+    size_t usedHeapSize = HEAP_DATA_ON_SIZE - os_mem_peek(OS_MEM_TYPE_DATA);
     currentHeapUsed     = static_cast<uint64_t>(usedHeapSize);
     return CHIP_NO_ERROR;
 }
 
 CHIP_ERROR DiagnosticDataProviderImpl::GetCurrentHeapHighWatermark(uint64_t & currentHeapHighWatermark)
 {
-    size_t highestHeapUsageRecorded = NS_HEAP_SIZE - xPortGetMinimumEverFreeHeapSize(RAM_TYPE_DATA_ON);
+    size_t highestHeapUsageRecorded = HEAP_DATA_ON_SIZE - xPortGetMinimumEverFreeHeapSize((RAM_TYPE)0);
     currentHeapHighWatermark        = static_cast<uint64_t>(highestHeapUsageRecorded);
     return CHIP_NO_ERROR;
 }
@@ -83,7 +83,7 @@ CHIP_ERROR DiagnosticDataProviderImpl::GetThreadMetrics(ThreadMetrics ** threadM
 
     arraySize = uxTaskGetNumberOfTasks();
 
-    taskStatusArray = (TaskStatus_t *) os_mem_alloc(RAM_TYPE_DATA_ON, arraySize * sizeof(TaskStatus_t));
+    taskStatusArray = (TaskStatus_t *) os_mem_alloc(OS_MEM_TYPE_DATA, arraySize * sizeof(TaskStatus_t));
 
     if (taskStatusArray != NULL)
     {
@@ -94,7 +94,7 @@ CHIP_ERROR DiagnosticDataProviderImpl::GetThreadMetrics(ThreadMetrics ** threadM
 
         for (x = 0; x < arraySize; x++)
         {
-            ThreadMetrics * thread = (ThreadMetrics *) os_mem_alloc(RAM_TYPE_DATA_ON, sizeof(ThreadMetrics));
+            ThreadMetrics * thread = (ThreadMetrics *) os_mem_alloc(OS_MEM_TYPE_DATA, sizeof(ThreadMetrics));
 
             Platform::CopyString(thread->NameBuf, taskStatusArray[x].pcTaskName);
             thread->name.Emplace(CharSpan::fromCharString(thread->NameBuf));
@@ -150,28 +150,28 @@ CHIP_ERROR DiagnosticDataProviderImpl::GetRebootCount(uint16_t & rebootCount)
 
 CHIP_ERROR DiagnosticDataProviderImpl::GetBootReason(BootReasonType & bootReason)
 {
-    T_SW_RESET_REASON resetReason = reset_reason_get();
+    // T_SW_RESET_REASON resetReason = reset_reason_get();
 
-    ChipLogProgress(DeviceLayer, "GetBootReason resetReason=0x%x", resetReason);
+    // ChipLogProgress(DeviceLayer, "GetBootReason resetReason=0x%x", resetReason);
 
-    switch (resetReason)
-    {
-    case RESET_REASON_WDT_TIMEOUT:
-        bootReason = BootReasonType::kSoftwareWatchdogReset;
-        break;
+    // switch (resetReason)
+    // {
+    // case RESET_REASON_WDT_TIMEOUT:
+    //     bootReason = BootReasonType::kSoftwareWatchdogReset;
+    //     break;
 
-    case RESET_REASON_POWER_DOWN:
-        bootReason = BootReasonType::kPowerOnReboot;
-        break;
+    // case RESET_REASON_POWER_DOWN:
+    //     bootReason = BootReasonType::kPowerOnReboot;
+    //     break;
 
-    case DFU_ACTIVE_RESET:
-        bootReason = BootReasonType::kSoftwareUpdateCompleted;
-        break;
+    // case DFU_ACTIVE_RESET:
+    //     bootReason = BootReasonType::kSoftwareUpdateCompleted;
+    //     break;
 
-    default:
-        bootReason = BootReasonType::kUnspecified;
-        break;
-    }
+    // default:
+    //     bootReason = BootReasonType::kUnspecified;
+    //     break;
+    // }
 
     return CHIP_NO_ERROR;
 }

@@ -313,7 +313,7 @@ void AppTask::InitGpio()
     identifyLED.Init(IDENTIFY_STATE_LED);
     systemStatusLED.Init(SYSTEM_STATE_LED);
 
-    matter_gpio_init(ButtonEventHandler);
+    //matter_gpio_init(ButtonEventHandler);
 }
 
 CHIP_ERROR AppTask::Init()
@@ -348,8 +348,8 @@ CHIP_ERROR AppTask::Init()
     chip::Shell::Engine::Root().RunMainLoop();
 #endif
 
-    check_mem_peak = os_mem_peek(RAM_TYPE_DATA_ON);
-    ChipLogProgress(DeviceLayer, "os_mem_peek(RAM_TYPE_DATA_ON) : (%u)", check_mem_peak);
+    //check_mem_peak = os_mem_peek(RAM_TYPE_DATA_ON);
+    //ChipLogProgress(DeviceLayer, "os_mem_peek(RAM_TYPE_DATA_ON) : (%u)", check_mem_peak);
 
     // Setup light
     err = LightingMgr().Init();
@@ -475,7 +475,7 @@ void AppTask::ButtonHandler(T_IO_MSG * p_msg)
                 sAppTask.mFunction = kFunction_NoneSelected;
 
                 chip::DeviceManager::CHIPDeviceManager::GetInstance().Shutdown();
-                WDT_SystemReset(RESET_ALL, SW_RESET_APP_START);
+                WDG_SystemReset(RESET_ALL);
             }
             else if (sAppTask.mFunctionTimerActive && sAppTask.mFunction == kFunction_BLEAdv)
             {

@@ -31,7 +31,7 @@
 #else
 #include <platform/OpenThread/GenericThreadStackManagerImpl_OpenThread.hpp>
 #endif
-#include "board.h"
+//#include "board.h"
 #include "os_msg.h"
 #include "os_task.h"
 #include <lib/support/CHIPMem.h>
@@ -216,7 +216,7 @@ void ThreadStackManagerImpl::SignalThreadActivityPending()
 {
     if (mThreadTask != NULL)
     {
-        os_task_notify_give(mThreadTask);
+        os_task_signal_send(mThreadTask, 1);
     }
 }
 
@@ -224,7 +224,7 @@ void ThreadStackManagerImpl::SignalThreadActivityPendingFromISR()
 {
     if (mThreadTask != NULL)
     {
-        os_task_notify_give(mThreadTask);
+        os_task_signal_send(mThreadTask, 1);
     }
 }
 
@@ -267,7 +267,7 @@ void ThreadStackManagerImpl::ExecuteThreadTask(void)
         ProcessThreadActivity();
         UnlockThreadStack();
 
-        os_task_notify_take(1, 0xffffffff, &notify);
+        os_task_signal_recv(&notify,0xffffffff);
     }
 }
 #endif // USE_FREERTOS_NATIVE_API
