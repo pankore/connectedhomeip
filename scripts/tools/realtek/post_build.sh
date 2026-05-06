@@ -47,8 +47,8 @@ if [ "$(uname -s)" = "Darwin" ]; then
     PREPEND_HEADER="$REALTEK_SDK_PATH/tools/prepend_header/prepend_header.macOS"
     MD5_TOOL="$REALTEK_SDK_PATH/tools/md5/md5.macOS"
 elif [ "$(uname -s)" = "Linux" ]; then
-    PREPEND_HEADER="$REALTEK_SDK_PATH/tools/prepend_header/prepend_header"
-    MD5_TOOL="$REALTEK_SDK_PATH/tools/md5/md5"
+    PREPEND_HEADER="$REALTEK_SDK_PATH/tool/Gadgets/gcc_tool_linux/prepend_header"
+    MD5_TOOL="$REALTEK_SDK_PATH/tool/Gadgets/gcc_tool/md5"
 fi
 
 chmod +x "$PREPEND_HEADER"
@@ -58,5 +58,11 @@ chmod +x "$MD5_TOOL"
     -i "$OT_SRCDIR/vendor/$RT_PLATFORM/common/mp.ini" \
     -r "$REALTEK_SDK_PATH/tools/keys/rtk_ecdsa.pem" \
     -a "$REALTEK_SDK_PATH/tools/keys/key.json"
+
+
+"$PREPEND_HEADER" /app_code "$BIN_FILE"
+"$PREPEND_HEADER" /ecdsa "$REALTEK_SDK_PATH/tool/Gadgets/ecdsa_key.pem" /app_code "$BIN_FILE"
+"$PREPEND_HEADER" /mp_ini "$OT_SRCDIR/vendor/$RT_PLATFORM/common/mp.ini" /app_code "$BIN_FILE"
+
 
 "$MD5_TOOL" "$MP_FILE"

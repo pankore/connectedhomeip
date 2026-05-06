@@ -124,6 +124,8 @@ string(APPEND CHIP_GN_ARGS "${import_str}")
 # Set arm_platform_config based on RT_PLATFORM
 if(RT_PLATFORM STREQUAL "rtl87x2g")
   set(arm_gni_path "//config/realtek/chip-gn-freertos/rtl87x2g/arm.gni")
+elseif(RT_PLATFORM STREQUAL "rtl87x3g")
+  set(arm_gni_path "//config/realtek/chip-gn-freertos/rtl87x3g/arm.gni")
 else()
   message(FATAL_ERROR "RT_PLATFORM is not set or set to an unsupported value: '${RT_PLATFORM}'")
 endif()
