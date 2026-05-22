@@ -177,30 +177,30 @@ void LightSwitch::ColorTemperatureChange(chip::EndpointId endpointId, uint16_t c
     }
 }
 
-// void LightSwitch::GenericSwitchInitialPress()
-// {
-//     DeviceLayer::SystemLayer().ScheduleLambda([this] {
-//         // Press moves Position from 0 (idle) to 1 (press)
-//         uint8_t newPosition = 1;
+void LightSwitch::GenericSwitchInitialPress()
+{
+    DeviceLayer::SystemLayer().ScheduleLambda([this] {
+        // Press moves Position from 0 (idle) to 1 (press)
+        uint8_t newPosition = 1;
 
-//         Clusters::Switch::Attributes::CurrentPosition::Set(kLightGenericSwitchEndpointId, newPosition);
-//         // InitialPress event takes newPosition as event data
-//         Clusters::SwitchServer::Instance().OnInitialPress(kLightGenericSwitchEndpointId, newPosition);
-//     });
-// }
+        Clusters::Switch::Attributes::CurrentPosition::Set(kLightGenericSwitchEndpointId, newPosition);
+        // InitialPress event takes newPosition as event data
+        Clusters::SwitchServer::Instance().OnInitialPress(kLightGenericSwitchEndpointId, newPosition);
+    });
+}
 
-// void LightSwitch::GenericSwitchReleasePress()
-// {
-//     DeviceLayer::SystemLayer().ScheduleLambda([this] {
-//         // Release moves Position from 1 (press) to 0 (idle)
-//         uint8_t previousPosition = 1;
-//         uint8_t newPosition      = 0;
+void LightSwitch::GenericSwitchReleasePress()
+{
+    DeviceLayer::SystemLayer().ScheduleLambda([this] {
+        // Release moves Position from 1 (press) to 0 (idle)
+        uint8_t previousPosition = 1;
+        uint8_t newPosition      = 0;
 
-//         Clusters::Switch::Attributes::CurrentPosition::Set(kLightGenericSwitchEndpointId, newPosition);
-//         // ShortRelease event takes previousPosition as event data
-//         Clusters::SwitchServer::Instance().OnShortRelease(kLightGenericSwitchEndpointId, previousPosition);
-//     });
-// }
+        Clusters::Switch::Attributes::CurrentPosition::Set(kLightGenericSwitchEndpointId, newPosition);
+        // ShortRelease event takes previousPosition as event data
+        Clusters::SwitchServer::Instance().OnShortRelease(kLightGenericSwitchEndpointId, previousPosition);
+    });
+}
 
 #if CONFIG_ENABLE_ATTRIBUTE_SUBSCRIBE
 void LightSwitch::SubscribeRequestForOneNode(chip::EndpointId endpointId)

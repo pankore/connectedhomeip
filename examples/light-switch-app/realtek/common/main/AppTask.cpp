@@ -215,6 +215,11 @@ Identify gIdentify = {
     OnTriggerIdentifyEffect,
 };
 
+Identify gIdentify1 = {
+    chip::EndpointId{ 2 },   OnIdentifyStart, OnIdentifyStop, Clusters::Identify::IdentifyTypeEnum::kVisibleIndicator,
+    OnTriggerIdentifyEffect,
+};
+
 void LockOpenThreadTask(void)
 {
     chip::DeviceLayer::ThreadStackMgr().LockThreadStack();
@@ -286,10 +291,6 @@ void AppTask::AppTaskMain(void * pvParameter)
                 {
                     switch (io_msg.type)
                     {
-                    case IO_MSG_TYPE_QDECODE:
-                        matter_ble_handle_io_msg(&io_msg);
-                        break;
-
                     case IO_MSG_TYPE_GPIO:
                         ButtonHandler(&io_msg);
                         break;
@@ -299,6 +300,7 @@ void AppTask::AppTaskMain(void * pvParameter)
                         break;
 
                     default:
+                        matter_ble_handle_io_msg(&io_msg);
                         break;
                     }
                 }
@@ -490,19 +492,19 @@ void AppTask::ButtonHandler(T_IO_MSG * p_msg)
         }
         break;
 
-        // case APP_GENERIC_SWITCH_BUTTON: {
-        //     if (btnPressed)
-        //     {
-        //         ChipLogProgress(NotSpecified, "Switch initial press");
-        //         LightSwitch::GetInstance().GenericSwitchInitialPress();
-        //     }
-        //     else
-        //     {
-        //         ChipLogProgress(NotSpecified, "Switch release press");
-        //         LightSwitch::GetInstance().GenericSwitchReleasePress();
-        //     }
-        // }
-        // break;
+        case APP_GENERIC_SWITCH_BUTTON: {
+            if (btnPressed)
+            {
+                ChipLogProgress(NotSpecified, "Switch initial press");
+                LightSwitch::GetInstance().GenericSwitchInitialPress();
+            }
+            else
+            {
+                ChipLogProgress(NotSpecified, "Switch release press");
+                LightSwitch::GetInstance().GenericSwitchReleasePress();
+            }
+        }
+        break;
 
     case APP_FUNCTION_BUTTON: {
         if (btnPressed)
