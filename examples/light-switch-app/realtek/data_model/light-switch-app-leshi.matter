@@ -2951,12 +2951,12 @@ endpoint 2 {
     emits event InitialPress;
     emits event ShortRelease;
     ram      attribute numberOfPositions default = 2;
-    callback attribute currentPosition;
+    ram      attribute currentPosition default = 0;
     callback attribute generatedCommandList;
     callback attribute acceptedCommandList;
     callback attribute attributeList;
     ram      attribute featureMap default = 6;
-    callback attribute clusterRevision;
+    ram      attribute clusterRevision default = 2;
   }
 }
 
