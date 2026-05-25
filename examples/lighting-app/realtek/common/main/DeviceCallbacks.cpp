@@ -37,6 +37,12 @@
 #include <lib/core/DataModelTypes.h>
 #include <lib/support/logging/CHIPLogging.h>
 
+#if !CHIP_DEVICE_CONFIG_SUPPORTS_CONCURRENT_CONNECTION
+#include <app/server/Server.h>
+#include <app/server/CommissioningWindowManager.h>
+#include <platform/DeviceControlServer.h>
+#endif
+
 #if CHIP_DEVICE_CONFIG_ENABLE_OTA_REQUESTOR
 #include <ota/OTAInitializer.h>
 #endif
@@ -79,6 +85,8 @@ constexpr uint32_t kOff_ms{ 950 };
 } /* namespace StatusLed */
 } /* namespace LedConsts */
 
+static bool isOpenthreadInitialized = false;
+
 #if CHIP_DEVICE_CONFIG_ENABLE_OTA_REQUESTOR
 static bool isOTAInitialized = false;
 
@@ -92,6 +100,45 @@ void InitOTARequestorHandler(System::Layer * systemLayer, void * appState)
 void HandOverBLE(System::Layer * systemLayer, void * appState)
 {
     matter_ble_handover();
+}
+
+void StartOpenthread(System::Layer * systemLayer, void * appState)
+{
+    CHIP_ERROR err;
+
+    ChipLogProgress(DeviceLayer, "Initializing OpenThread stack");
+
+    err = ThreadStackMgr().InitThreadStack();
+    ReturnOnFailure(err);
+
+    ChipLogProgress(DeviceLayer, "Set Thread Device Type");
+
+#if CHIP_DEVICE_CONFIG_THREAD_FTD
+    err = ConnectivityMgr().SetThreadDeviceType(ConnectivityManager::kThreadDeviceType_Router);
+#else // CHIP_DEVICE_CONFIG_THREAD_FTD
+#if CHIP_CONFIG_ENABLE_ICD_SERVER
+#if CHIP_DEVICE_CONFIG_THREAD_SSED
+    err = ConnectivityMgr().SetThreadDeviceType(ConnectivityManager::kThreadDeviceType_SynchronizedSleepyEndDevice);
+#else
+    err = ConnectivityMgr().SetThreadDeviceType(ConnectivityManager::kThreadDeviceType_SleepyEndDevice);
+#endif
+#else  // CHIP_CONFIG_ENABLE_ICD_SERVER
+    err = ConnectivityMgr().SetThreadDeviceType(ConnectivityManager::kThreadDeviceType_MinimalEndDevice);
+#endif // CHIP_CONFIG_ENABLE_ICD_SERVER
+#endif // CHIP_DEVICE_CONFIG_THREAD_FTD
+    ReturnOnFailure(err);
+
+    ChipLogProgress(DeviceLayer, "Start OpenThread task");
+    err = ThreadStackMgrImpl().StartThreadTask();
+    ReturnOnFailure(err);
+
+    ChipLogProgress(DeviceLayer, "Start OpenThread task done!!");
+
+    app::DnssdServer::Instance().StartServer();
+
+#if !CHIP_DEVICE_CONFIG_SUPPORTS_CONCURRENT_CONNECTION
+    DeviceControlServer::DeviceControlSvr().PostOperationalNetworkStartedEvent();
+#endif
 }
 
 void DeviceCallbacks::UpdateStatusLED()
@@ -128,6 +175,21 @@ void DeviceCallbacks::DeviceEventCallback(const ChipDeviceEvent * event, intptr_
     case DeviceEventType::kCHIPoBLEAdvertisingChange:
         sHaveBLEConnections = ConnectivityMgr().NumBLEConnections() != 0;
         UpdateStatusLED();
+
+#if !CHIP_DEVICE_CONFIG_SUPPORTS_CONCURRENT_CONNECTION
+        if(isOpenthreadInitialized == false &&
+           ConnectivityMgr().IsBLEAdvertising() == false &&
+           chip::Server::GetInstance().GetCommissioningWindowManager().IsCommissioningWindowOpen() == false)
+        {
+            isOpenthreadInitialized = true;
+            chip::DeviceLayer::Internal::BLEMgr().Shutdown();
+
+#if CHIP_ENABLE_OPENTHREAD
+            chip::DeviceLayer::SystemLayer().StartTimer(chip::System::Clock::Milliseconds32(300),
+                                                        StartOpenthread, nullptr);
+#endif // CHIP_ENABLE_OPENTHREAD
+        }
+#endif
         break;
 
     case DeviceEventType::kInternetConnectivityChange:
@@ -153,6 +215,23 @@ void DeviceCallbacks::DeviceEventCallback(const ChipDeviceEvent * event, intptr_
         sIsNetworkProvisioned = ConnectivityMgr().IsThreadProvisioned();
         sIsNetworkEnabled     = ConnectivityMgr().IsThreadEnabled();
         UpdateStatusLED();
+        break;
+
+    case DeviceEventType::kCloseAllBleConnections:
+        {
+#if !CHIP_DEVICE_CONFIG_SUPPORTS_CONCURRENT_CONNECTION
+            if (isOpenthreadInitialized == false)
+            {
+                isOpenthreadInitialized = true;
+                chip::DeviceLayer::Internal::BLEMgr().Shutdown();
+
+#if CHIP_ENABLE_OPENTHREAD
+                chip::DeviceLayer::SystemLayer().StartTimer(chip::System::Clock::Milliseconds32(300),
+                                                            StartOpenthread, nullptr);
+#endif // CHIP_ENABLE_OPENTHREAD
+            }
+#endif
+        }
         break;
 
     case DeviceEventType::kServerReady: {
