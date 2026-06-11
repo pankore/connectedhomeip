@@ -74,7 +74,10 @@ DLL_EXPORT CHIP_ERROR Mutex::Init(Mutex & aThis)
 DLL_EXPORT CHIP_ERROR Mutex::Init(Mutex & aThis)
 {
 restart:
-    if (__sync_bool_compare_and_swap(&aThis.mInitialized, 0, 1))
+    // __sync_bool_compare_and_swap (generic, no suffix) is not affected by -fno-inline-atomics on GCC 12,
+    // if (__sync_bool_compare_and_swap(&aThis.mInitialized, 0, 1))
+    bool _cas_expected = false;
+    if (__atomic_compare_exchange_n(&aThis.mInitialized, &_cas_expected, true, false, __ATOMIC_ACQ_REL, __ATOMIC_RELAXED))
     {
 #if (configSUPPORT_STATIC_ALLOCATION == 1)
         aThis.mFreeRTOSSemaphore = xSemaphoreCreateMutexStatic(&aThis.mFreeRTOSSemaphoreObj);

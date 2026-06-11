@@ -38,8 +38,10 @@ namespace Platform {
 
 void LogV(const char * module, uint8_t category, const char * msg, va_list v)
 {
-    DBG_DIRECT(msg);
-    //DBG_TEXT_COMBINE_LEVEL_ERROR(MODULE_MATTER, module, msg, v);
+    char buf[256];
+    vsnprintf(buf, sizeof(buf), msg, v);
+    DBG_DIRECT("%s", buf);
+    // DBG_TEXT_COMBINE_LEVEL_ERROR(MODULE_MATTER, module, msg, v);
     // uint8_t level = otLoggingGetLevel();
     // if (category && category <= level)
     // {

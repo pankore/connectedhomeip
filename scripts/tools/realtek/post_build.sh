@@ -54,10 +54,10 @@ fi
 chmod +x "$PREPEND_HEADER"
 chmod +x "$MD5_TOOL"
 
-"$PREPEND_HEADER" -t app_code -b 15 -p "$BIN_FILE" -m 1 \
-    -i "$OT_SRCDIR/vendor/$RT_PLATFORM/common/mp.ini" \
-    -r "$REALTEK_SDK_PATH/tools/keys/rtk_ecdsa.pem" \
-    -a "$REALTEK_SDK_PATH/tools/keys/key.json"
+# "$PREPEND_HEADER" -t app_code -b 15 -p "$BIN_FILE" -m 1 \
+#     -i "$OT_SRCDIR/vendor/$RT_PLATFORM/common/mp.ini" \
+#     -r "$REALTEK_SDK_PATH/tools/keys/rtk_ecdsa.pem" \
+#     -a "$REALTEK_SDK_PATH/tools/keys/key.json"
 
 
 "$PREPEND_HEADER" /app_code "$BIN_FILE"
