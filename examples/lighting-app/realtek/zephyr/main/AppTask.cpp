@@ -27,8 +27,10 @@
 #include <app-common/zap-generated/attributes/Accessors.h>
 #include <app/TestEventTriggerDelegate.h>
 #include <app/clusters/identify-server/identify-server.h>
+#include <app/clusters/network-commissioning/network-commissioning.h>
 #include <app/clusters/ota-requestor/OTATestEventTriggerHandler.h>
 #include <app/server/Dnssd.h>
+#include <platform/OpenThread/GenericNetworkCommissioningThreadDriver.h>
 #include <app/server/Server.h>
 #include <credentials/DeviceAttestationCredsProvider.h>
 #include <credentials/examples/DeviceAttestationCredsExample.h>
@@ -36,6 +38,9 @@
 #include <lib/support/CHIPMem.h>
 #include <lib/support/CodeUtils.h>
 #include <setup_payload/OnboardingCodesUtil.h>
+#include <app/persistence/AttributePersistenceProviderInstance.h>
+#include <app/persistence/DefaultAttributePersistenceProvider.h>
+#include <data-model-providers/codegen/Instance.h>
 #include <system/SystemClock.h>
 
 #if CHIP_DEVICE_CONFIG_ENABLE_OTA_REQUESTOR
@@ -73,6 +78,7 @@ bool sIsNetworkEnabled     = false;
 bool sHaveBLEConnections   = false;
 
 chip::DeviceLayer::DeviceInfoProviderImpl gExampleDeviceInfoProvider;
+chip::app::DefaultAttributePersistenceProvider gSimpleAttributePersistence;
 
 #if CHIP_DEVICE_CONFIG_ENABLE_OTA_REQUESTOR
 static bool isOTAInitialized                 = false;
@@ -84,7 +90,25 @@ void InitOTARequestorHandler(System::Layer * systemLayer, void * appState)
     OTAInitializer::Instance().InitOTARequestor();
 }
 #endif
+
+#if CHIP_SYSTEM_CONFIG_USE_OPENTHREAD_ENDPOINT
+void LockOpenThreadTask(void)
+{
+    chip::DeviceLayer::ThreadStackMgr().LockThreadStack();
+}
+
+void UnlockOpenThreadTask(void)
+{
+    chip::DeviceLayer::ThreadStackMgr().UnlockThreadStack();
+}
+#endif // CHIP_SYSTEM_CONFIG_USE_OPENTHREAD_ENDPOINT
+
 } // namespace
+
+#if CHIP_ENABLE_OPENTHREAD
+app::Clusters::NetworkCommissioning::InstanceAndDriver<NetworkCommissioning::GenericThreadDriver>
+sThreadNetworkDriver(0);
+#endif // CHIP_ENABLE_OPENTHREAD
 
 namespace LedConsts {
 constexpr uint32_t kBlinkRate_ms{ 500 };
@@ -106,8 +130,6 @@ constexpr uint32_t kOff_ms{ 950 };
 CHIP_ERROR AppTask::Init()
 {
     // Initialize LEDs
-    LEDWidget::SetStateUpdateCallback(LEDStateUpdateHandler);
-
     sStatusLED.Init(GPIO_DT_SPEC_GET_OR(DT_ALIAS(led0), gpios, {}));
     sIdentifyLED.Init(GPIO_DT_SPEC_GET_OR(DT_ALIAS(led1), gpios, {}));
     sIdentifyLED.Set(false);
@@ -150,7 +172,8 @@ CHIP_ERROR AppTask::Init()
 #if CHIP_DEVICE_CONFIG_THREAD_FTD
     err = ConnectivityMgr().SetThreadDeviceType(ConnectivityManager::kThreadDeviceType_Router);
 #elif CHIP_DEVICE_CONFIG_THREAD_SSED
-    err = ConnectivityMgr().SetThreadDeviceType(ConnectivityManager::kThreadDeviceType_SynchronizedSleepyEndDevice);
+    err = ConnectivityMgr().SetThreadDeviceType(
+              ConnectivityManager::kThreadDeviceType_SynchronizedSleepyEndDevice);
 #else
     err = ConnectivityMgr().SetThreadDeviceType(ConnectivityManager::kThreadDeviceType_SleepyEndDevice);
 #endif
@@ -160,13 +183,11 @@ CHIP_ERROR AppTask::Init()
         LOG_ERR("ConnectivityMgr().SetThreadDeviceType() failed");
         return err;
     }
+
+    (void) sThreadNetworkDriver.Init();
 #else
     return CHIP_ERROR_INTERNAL;
 #endif // CHIP_ENABLE_OPENTHREAD
-
-    // Initialize function button timer
-    k_timer_init(&sFunctionTimer, &AppTask::FunctionTimerTimeoutCallback, nullptr);
-    k_timer_user_data_set(&sFunctionTimer, this);
 
 #ifdef CHIP_DEVICE_CONFIG_ENABLE_OTA_REQUESTOR
     /* OTA image confirmation must be done before the factory data init. */
@@ -187,10 +208,27 @@ CHIP_ERROR AppTask::Init()
     // Init ZCL Data Model and CHIP App Server
     static chip::CommonCaseDeviceServerInitParams initParams;
     initParams.InitializeStaticResourcesBeforeServerInit();
+    VerifyOrDie(gSimpleAttributePersistence.Init(initParams.persistentStorageDelegate) ==
+                CHIP_NO_ERROR);
+
+    gExampleDeviceInfoProvider.SetStorageDelegate(initParams.persistentStorageDelegate);
+    chip::DeviceLayer::SetDeviceInfoProvider(&gExampleDeviceInfoProvider);
+
+    initParams.dataModelProvider = chip::app::CodegenDataModelProviderInstance(
+                                       initParams.persistentStorageDelegate);
+
+#if CHIP_SYSTEM_CONFIG_USE_OPENTHREAD_ENDPOINT
+    // Set up OpenThread configuration when OpenThread is included
+    chip::Inet::EndPointStateOpenThread::OpenThreadEndpointInitParam nativeParams{};
+    nativeParams.lockCb                = LockOpenThreadTask;
+    nativeParams.unlockCb              = UnlockOpenThreadTask;
+    nativeParams.openThreadInstancePtr = chip::DeviceLayer::ThreadStackMgrImpl().OTInstance();
+    initParams.endpointNativeParams    = static_cast<void *>(&nativeParams);
+#endif
+
     ReturnErrorOnFailure(chip::Server::GetInstance().Init(initParams));
 
-    gExampleDeviceInfoProvider.SetStorageDelegate(&Server::GetInstance().GetPersistentStorage());
-    chip::DeviceLayer::SetDeviceInfoProvider(&gExampleDeviceInfoProvider);
+    chip::app::SetAttributePersistenceProvider(&gSimpleAttributePersistence);
 
     ConfigurationMgr().LogDeviceConfig();
     PrintOnboardingCodes(chip::RendezvousInformationFlags(chip::RendezvousInformationFlag::kBLE));
@@ -204,8 +242,6 @@ CHIP_ERROR AppTask::Init()
 #endif
 
     // Add CHIP event handler and start CHIP thread.
-    // Note that all the initialization code should happen prior to this point to avoid data races
-    // between the main and the CHIP threads.
     PlatformMgr().AddEventHandler(ChipEventHandler, 0);
 
     err = PlatformMgr().StartEventLoopTask();

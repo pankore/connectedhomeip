@@ -2,7 +2,6 @@
 	chosen {
 		zephyr,ieee802154 = &ieee802154;
 		zephyr,code-partition = &app_partition_0;
-		zephyr,entropy = &trng;
 	};
 
 	tcm {
@@ -12,17 +11,17 @@
 
 		tcm0: memory@100c00 {
 			device_type = "tcm0, used as zephyr-sram";
-			reg = <0x100c00 0x30000>;
+			reg = <0x100c00 DT_SIZE_K(172)>;
 		};
-		tcm1: memory@130C00 {
+		tcm1: memory@12bc00 {
 			device_type = "tcm1, used as zephyr-itcm";
 			compatible = "zephyr,memory-region", "arm,itcm";
-			reg = <0x130C00 0x7000>;
+			reg = <0x12bc00 DT_SIZE_K(28)>;
 			zephyr,memory-region = "ITCM";
 		};
-		tcm_heap: memory@137C00 {
+		tcm_heap: memory@132c00 {
 			device_type = "tcm heap region";
-			reg = <0x137C00 0x5000>;
+			reg = <0x132c00 DT_SIZE_K(40)>;
 		};
 	};
 };
@@ -70,4 +69,12 @@
 
 &ieee802154 {
 	status = "okay";
+};
+
+&ext_data_ram {
+	reg = <0x200000 DT_SIZE_K(2)>;
+};
+
+&ext_data_ram_heap {
+	reg = <0x200800 DT_SIZE_K(14)>;
 };
