@@ -61,14 +61,26 @@ target_sources(app PRIVATE
                main/AppTask.cpp
                main/ZclCallbacks.cpp
                ${REALTEK_COMMON}/zephyr/LEDWidget.cpp
-               ${REALTEK_COMMON}/zephyr/matter_button.c)
+               ${REALTEK_COMMON}/zephyr/matter_button.c
+               ${ZEPHYR_BASE}/../realtek-zephyr-project/applications/ot-cli/src/alarm.c)
 
 target_link_options(app
               PUBLIC
+                  -Wl,--wrap,memcpy
+                  -Wl,--wrap,memset
                   -Wl,--wrap,mac_EnterCritical_rom
                   -Wl,--wrap,mac_ExitCritical_rom
-                  -Wl,--wrap,mac_RstRF_rom
                   -Wl,--wrap,otPlatReset
+                  -Wl,--wrap,platformAlarmInit
+                  -Wl,--wrap,platformAlarmProcess
+                  -Wl,--wrap,otPlatAlarmMilliGetNow
+                  -Wl,--wrap,otPlatAlarmMilliStartAt
+                  -Wl,--wrap,otPlatAlarmMilliStop
+                  -Wl,--wrap,otPlatAlarmMicroGetNow
+                  -Wl,--wrap,otPlatAlarmMicroStartAt
+                  -Wl,--wrap,otPlatAlarmMicroStop
+                  -Wl,--wrap,otPlatTimeGet
+                  -Wl,--wrap,otPlatLog
           )
 
 chip_configure_data_model(app

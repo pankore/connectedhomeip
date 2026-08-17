@@ -16,12 +16,12 @@
 		tcm1: memory@12bc00 {
 			device_type = "tcm1, used as zephyr-itcm";
 			compatible = "zephyr,memory-region", "arm,itcm";
-			reg = <0x12bc00 DT_SIZE_K(28)>;
+			reg = <0x12bc00 DT_SIZE_K(34)>;
 			zephyr,memory-region = "ITCM";
 		};
-		tcm_heap: memory@132c00 {
+		tcm_heap: memory@134400 {
 			device_type = "tcm heap region";
-			reg = <0x132c00 DT_SIZE_K(40)>;
+			reg = <0x134400 DT_SIZE_K(34)>;
 		};
 	};
 };

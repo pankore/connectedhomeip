@@ -144,6 +144,9 @@ CHIP_ERROR AppTask::Init()
         return chip::System::MapErrorZephyr(ret);
     }
 
+    // Initialize function timer
+    k_timer_init(&sFunctionTimer, AppTask::FunctionTimerTimeoutCallback, nullptr);
+
     // Initialize CHIP stack
     LOG_INF("Init CHIP stack");
 
