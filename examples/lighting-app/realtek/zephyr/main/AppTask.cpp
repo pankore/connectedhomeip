@@ -22,6 +22,7 @@
 #include "AppEvent.h"
 #include "LEDWidget.h"
 #include "matter_button.h"
+#include "RealtekObserver.h"
 
 #include <DeviceInfoProviderImpl.h>
 #include <app-common/zap-generated/attributes/Accessors.h>
@@ -230,6 +231,15 @@ CHIP_ERROR AppTask::Init()
 #endif
 
     ReturnErrorOnFailure(chip::Server::GetInstance().Init(initParams));
+
+    // Register observer to trigger a factory reset when the last fabric is removed (unpaired).
+    static RealtekObserver sRealtekObserver;
+    err = chip::Server::GetInstance().GetFabricTable().AddFabricDelegate(&sRealtekObserver);
+    if (err != CHIP_NO_ERROR)
+    {
+        LOG_ERR("The RealtekObserver could not be registered with the FabricTable: %" CHIP_ERROR_FORMAT,
+                err.Format());
+    }
 
     chip::app::SetAttributePersistenceProvider(&gSimpleAttributePersistence);
 

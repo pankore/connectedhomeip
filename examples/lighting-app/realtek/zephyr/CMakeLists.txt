@@ -53,6 +53,7 @@ target_include_directories(app PRIVATE
                            ${GEN_DIR}/lighting-app
                            ${REALTEK_COMMON}/bee/ota
                            ${REALTEK_COMMON}/zephyr
+                           ${REALTEK_COMMON}/util
                            ${ZEPHYR_BASE}/../modules/hal/realtek/bee/drivers/wdt/inc
                            ${ZEPHYR_BASE}/../realtek-zephyr-project/applications/matter_common)
 
@@ -63,6 +64,8 @@ target_sources(app PRIVATE
                ${REALTEK_COMMON}/zephyr/LEDWidget.cpp
                ${REALTEK_COMMON}/zephyr/matter_button.c
                ${ZEPHYR_BASE}/../realtek-zephyr-project/applications/ot-cli/src/alarm.c)
+zephyr_code_relocate(FILES ${ZEPHYR_BASE}/../realtek-zephyr-project/applications/ot-cli/src/alarm.c LOCATION ITCM_TEXT)
+zephyr_code_relocate(FILES ${ZEPHYR_BASE}/modules/openthread/platform/radio.c LOCATION ITCM_TEXT)
 
 target_link_options(app
               PUBLIC
