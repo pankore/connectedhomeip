@@ -62,9 +62,12 @@ target_sources(app PRIVATE
                main/AppTask.cpp
                main/ZclCallbacks.cpp
                ${REALTEK_COMMON}/zephyr/LEDWidget.cpp
-               ${REALTEK_COMMON}/zephyr/matter_button.c
-               ${ZEPHYR_BASE}/../realtek-zephyr-project/applications/ot-cli/src/alarm.c)
-zephyr_code_relocate(FILES ${ZEPHYR_BASE}/../realtek-zephyr-project/applications/ot-cli/src/alarm.c LOCATION ITCM_TEXT)
+               ${REALTEK_COMMON}/zephyr/matter_button.c)
+
+# Bee alarm implementation: replaces the generic OpenThread alarms with ones
+# driven by the MAC hardware timer, and pulls in the ZBMAC power management.
+target_sources(app PRIVATE ${ZEPHYR_BASE}/tests/boards/realtek/bee/ot-cli/src/alarm.c)
+zephyr_code_relocate(FILES ${ZEPHYR_BASE}/tests/boards/realtek/bee/ot-cli/src/alarm.c LOCATION ITCM_TEXT)
 zephyr_code_relocate(FILES ${ZEPHYR_BASE}/modules/openthread/platform/radio.c LOCATION ITCM_TEXT)
 
 target_link_options(app
@@ -74,11 +77,13 @@ target_link_options(app
                   -Wl,--wrap,mac_EnterCritical_rom
                   -Wl,--wrap,mac_ExitCritical_rom
                   -Wl,--wrap,otPlatReset
-                  -Wl,--wrap,platformAlarmInit
-                  -Wl,--wrap,platformAlarmProcess
+                  -Wl,--wrap,platformAlarmMilliInit
+                  -Wl,--wrap,platformAlarmMilliProcess
                   -Wl,--wrap,otPlatAlarmMilliGetNow
                   -Wl,--wrap,otPlatAlarmMilliStartAt
                   -Wl,--wrap,otPlatAlarmMilliStop
+                  -Wl,--wrap,platformAlarmMicroInit
+                  -Wl,--wrap,platformAlarmMicroProcess
                   -Wl,--wrap,otPlatAlarmMicroGetNow
                   -Wl,--wrap,otPlatAlarmMicroStartAt
                   -Wl,--wrap,otPlatAlarmMicroStop

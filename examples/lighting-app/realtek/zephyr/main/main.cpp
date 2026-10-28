@@ -107,7 +107,7 @@ void *__wrap_memset(void *dst0, int Val, size_t length)
     uint32_t Wideval;
     uint8_t *dst;
 
-    dst = dst0;
+    dst = (uint8_t *) dst0;
     /*
      * If not enough words, just fill bytes.  A length >= 2 words
      * guarantees that at least one of them is `complete' after

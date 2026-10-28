@@ -5,22 +5,17 @@
 	};
 
 	tcm {
-		/delete-node/ memory@100c00;
-		/delete-node/ memory@119c00;
 		/delete-node/ memory@133c00;
 
-		tcm0: memory@100c00 {
-			device_type = "tcm0, used as zephyr-sram";
-			reg = <0x100c00 DT_SIZE_K(174)>;
-		};
-		tcm1: memory@12c400 {
-			device_type = "tcm1, used as zephyr-itcm";
+		tcm1: memory@12cc00 {
+			/* TCM1, used as zephyr-itcm */
 			compatible = "zephyr,memory-region", "arm,itcm";
-			reg = <0x12c400 DT_SIZE_K(34)>;
+			reg = <0x12cc00 DT_SIZE_K(32)>;
 			zephyr,memory-region = "ITCM";
 		};
+
 		tcm_heap: memory@134c00 {
-			device_type = "tcm heap region";
+			/* Reserved memory for realtek osif heap manangement */
 			reg = <0x134c00 DT_SIZE_K(32)>;
 		};
 	};
@@ -69,12 +64,4 @@
 
 &ieee802154 {
 	status = "okay";
-};
-
-&ext_data_ram {
-	reg = <0x200000 DT_SIZE_K(2)>;
-};
-
-&ext_data_ram_heap {
-	reg = <0x200800 DT_SIZE_K(14)>;
 };

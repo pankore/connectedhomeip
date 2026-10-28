@@ -211,7 +211,7 @@ CHIP_ERROR AppTask::Init()
 
     // Init ZCL Data Model and CHIP App Server
     static chip::CommonCaseDeviceServerInitParams initParams;
-    initParams.InitializeStaticResourcesBeforeServerInit();
+    (void) initParams.InitializeStaticResourcesBeforeServerInit();
     VerifyOrDie(gSimpleAttributePersistence.Init(initParams.persistentStorageDelegate) ==
                 CHIP_NO_ERROR);
 
@@ -246,16 +246,8 @@ CHIP_ERROR AppTask::Init()
     ConfigurationMgr().LogDeviceConfig();
     PrintOnboardingCodes(chip::RendezvousInformationFlags(chip::RendezvousInformationFlag::kBLE));
 
-#if CHIP_DEVICE_CONFIG_ENABLE_CHIPOBLE
-    ChipLogProgress(DeviceLayer, "Start BLE Adv");
-    if (CONFIG_NETWORK_LAYER_BLE)
-    {
-        ConnectivityMgr().SetBLEAdvertisingEnabled(true);
-    }
-#endif
-
     // Add CHIP event handler and start CHIP thread.
-    PlatformMgr().AddEventHandler(ChipEventHandler, 0);
+    TEMPORARY_RETURN_IGNORED PlatformMgr().AddEventHandler(ChipEventHandler, 0);
 
     err = PlatformMgr().StartEventLoopTask();
     if (err != CHIP_NO_ERROR)
